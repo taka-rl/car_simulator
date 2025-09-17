@@ -26,7 +26,8 @@ OS Windows 10
     │   ├── car.h                       #    
     │   ├── glad.c                      # 
     │   ├── main.cpp                    # 
-    │   └── main_car.cpp                # Temp cpp file for car.cpp
+    │   ├── main_car.cpp                # Temp cpp file for car.cpp
+    │   └── opengl_learning.cpp         # Temp cpp file for learning OpenGL
     └── README.md                       # Project documentation
 
 ## Build setting
@@ -34,8 +35,9 @@ OS Windows 10
 ### Build command
 ```cmd
 g++ src/main.cpp src/glad.c -o output/program_rectangle -Llib -Iinclude -lglfw3dll
-
+g++ src/opengl_learning.cpp src/glad.c -o output/program_rectangle -Llib -Iinclude -lglfw3dll
 g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
+
 ```
 
 ## Development Plan
