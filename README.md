@@ -35,7 +35,7 @@ OS Windows 10
 ### Build command
 ```cmd
 g++ src/main.cpp src/glad.c -o output/program_rectangle -Llib -Iinclude -lglfw3dll
-g++ src/opengl_learning.cpp src/glad.c -o output/program_rectangle -Llib -Iinclude -lglfw3dll
+g++ src/opengl_learning.cpp src/glad.c -o output/program_opengl_learning -Llib -Iinclude -lglfw3dll
 g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
 
 ```
@@ -48,8 +48,11 @@ draw a single rectangle
 [Draw 2D Shapes C++ OpenGL from Scratch](https://www.youtube.com/watch?v=OI-6aYTWl4w)  
 [OpenGL 入門](http://www.center.nitech.ac.jp/~kenji/Study/Lib/ogl/)  
 [Hello Triangle](https://learnopengl.com/Getting-started/Hello-Triangle)  
+https://tokoik.github.io/GLFWdraft.pdf
+https://zenn.dev/nyanchu_program/articles/97637278839801
 
-    - [ ] Draw a rectangle
+
+    - [X] Draw a rectangle
     - [ ] Key inputs
     - [ ] Create a simple map
 - [ ] Draw a car with each wheel
@@ -57,6 +60,7 @@ draw a single rectangle
 - [ ] Draw a trafic road
 - [ ] Expand the map
 - [ ] Create discrete/continuous modes
+- [ ] Convert unit from meter to pixel 
 
 ### Car
 - [ ] Implement Kinematic bicycle model
