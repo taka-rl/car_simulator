@@ -53,7 +53,7 @@ https://zenn.dev/nyanchu_program/articles/97637278839801
 
 
     - [X] Draw a rectangle
-    - [ ] Key inputs
+    - [X] Key inputs
     - [ ] Create a simple map
 - [ ] Draw a car with each wheel
 - [ ] Draw a car trajectory line
