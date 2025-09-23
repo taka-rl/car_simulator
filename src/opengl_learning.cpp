@@ -2,9 +2,15 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <algorithm>
+
+
+// simulation state
+struct State { float x, y; };
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, float& ix, float& iy);
+void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -44,9 +50,11 @@ void main()
 
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
+    "uniform vec2 uOffset;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "   vec3 p = aPos + vec3(uOffset, 0.0);\n"
+    "   gl_Position = vec4(p, 1.0);\n"
     "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
     "out vec4 FragColor;\n"
@@ -54,6 +62,25 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "{\n"
     "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n" // 1.0f, 0.8f, 0.2f, 1.0f: Yellow-ish color
     "}\n\0";
+
+
+
+// Clamp accumulator to avoid spiral of death after stalls
+inline void clampAccumulator(double& accum, const double simDt, double maxSteps = 5.0) {
+    const double MAX_ACCUM = simDt * maxSteps;
+    if (accum > MAX_ACCUM) accum = MAX_ACCUM;
+}
+
+// Linear interpolation for positions
+inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
+
+// Interpolate state (positions); for headings, use lerpAngle on psi
+inline State interp(const State& prev, const State& curr, float alpha) {
+    return State{
+        lerp(prev.x, curr.x, alpha),
+        lerp(prev.y, curr.y, alpha)
+    };
+}
 
 int main()
 {
@@ -210,13 +237,50 @@ int main()
     // uncomment this call to draw in wireframe polygons.
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    // grab uniform location once
+    glUseProgram(shaderProgram);
+    int uOffsetLoc = glGetUniformLocation(shaderProgram, "uOffset");
+
+    // Turn on vsync 60FPS
+    glfwSwapInterval(1);
+
+    // Simulation Config
+    const double simDt = 0.01;
+    double accumulator = 0.0;
+    double lastTime = glfwGetTime();
+
+    // simulation state (previous and current for interpolation)
+    State prevState{0,0}, curState{0,0};
+
+    // inputs
+    float ix = 0.0f, iy = 0.0f;
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        // timing
+        double now = glfwGetTime();
+        double frameDt = now - lastTime;
+        lastTime = now;
+        accumulator += frameDt;
+
         // input
         // -----
-        processInput(window);
+        processInput(window, ix, iy);
+    
+        clampAccumulator(accumulator, simDt);
+
+        // fixed-step simulation
+        while (accumulator >= simDt) {
+            step(prevState, curState, simDt, ix, iy);
+            accumulator -= simDt;
+        }
+
+        // interpolate for smooth rendering
+        float alpha = static_cast<float>(accumulator / simDt);
+        State drawS = interp(prevState, curState, alpha);
+        glUniform2f(uOffsetLoc, drawS.x, drawS.y);
 
         // render
         // ------
@@ -226,6 +290,7 @@ int main()
         // draw a rectangle
         // draw our first triangle
         glUseProgram(shaderProgram);
+        glUniform2f(uOffsetLoc, drawS.x, drawS.y);
         glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         //glDrawArrays(GL_TRIANGLES, 0, 6);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -251,10 +316,23 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, float& ix, float& iy)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // Move a rectangle based on inputs
+    float dx = 0.0f, dy = 0.0f;
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) dx += 1.0;
+    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) dx -= 1.0;
+    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) dy += 1.0;
+    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) dy -= 1.0;
+
+    // simple critically-damped-ish smoothing toward target inputs (optional)
+    // makes input changes less jittery between frames
+    const float k = 0.25f; // smoothing factor [0..1], 0=no change, 1=instant
+    ix = ix + k * (dx - ix);
+    iy = iy + k * (dy - iy);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -265,3 +343,23 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
+
+// simulation step
+// ---------------------------------------------------------------------------------------------------------
+void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy) {
+    // simple kinematic “speed” in NDC units per second
+    const float SPEED = 0.8f;
+
+    // shift previous → current for interpolation
+    prevState = curState;
+
+    // apply input as velocity command
+    curState.x += (ix * SPEED) * static_cast<float>(simDt);
+    curState.y += (iy * SPEED) * static_cast<float>(simDt);
+
+    // keep quad fully on screen: NDC [-1, +1], quad half-size = 0.5
+    const float margin = 0.5f;
+    curState.x = std::clamp(curState.x, -1.0f + margin, 1.0f - margin);
+    curState.y = std::clamp(curState.y, -1.0f + margin, 1.0f - margin);
+};
+
