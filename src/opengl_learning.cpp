@@ -7,14 +7,21 @@
 
 // simulation state
 struct State { float x, y; };
+const float PIXEL_TO_METER_SCALE = 0.05;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window, float& ix, float& iy);
 void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy);
+void keepQuadNDC(State& prevState, State& curState) ;
 
 // settings
+// window size
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+// rectangle as a car size
+const float CAR_WIDTH = 2.0 * PIXEL_TO_METER_SCALE;
+const float CAR_HEIGHT = 4.0 * PIXEL_TO_METER_SCALE;
 
 /*
 vertexShaderSource defines vertex shader that needs to be written in GLSL which is similar to C.
@@ -157,12 +164,11 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices1[] = { -1,-0.5,  1,-0.5,  1,0.5,  -1,-0.5,  1,0.5, -1,0.5 };
     float vertices[] = {
-        0.5f,  0.5f, 0.0f,  // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left 
+        CAR_WIDTH / 2,  CAR_HEIGHT / 2, 0.0f,  // top right
+        CAR_WIDTH / 2,  -CAR_HEIGHT / 2, 0.0f,  // bottom right
+        -CAR_WIDTH / 2, -CAR_HEIGHT / 2, 0.0f,  // bottom left
+        -CAR_WIDTH / 2, CAR_HEIGHT / 2, 0.0f   // top left 
     };
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
@@ -280,7 +286,6 @@ int main()
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
         State drawS = interp(prevState, curState, alpha);
-        glUniform2f(uOffsetLoc, drawS.x, drawS.y);
 
         // render
         // ------
@@ -357,9 +362,38 @@ void step(State& prevState, State& curState, const double& simDt, float& ix, flo
     curState.x += (ix * SPEED) * static_cast<float>(simDt);
     curState.y += (iy * SPEED) * static_cast<float>(simDt);
 
-    // keep quad fully on screen: NDC [-1, +1], quad half-size = 0.5
-    const float margin = 0.5f;
-    curState.x = std::clamp(curState.x, -1.0f + margin, 1.0f - margin);
-    curState.y = std::clamp(curState.y, -1.0f + margin, 1.0f - margin);
+    // debug to see coordinates
+    // std::cout << "X: " << curState.x << ", Y: " << curState.y << std::endl;
+
+    // keep quad fully on screen: NDC [-1, +1]
+    keepQuadNDC(prevState, curState);
 };
 
+// Keep quadrangle fully on screen: NDC [-1, +1]
+// ---------------------------------------------------------------------------------------------------------
+void keepQuadNDC(State& prevState, State& curState) {
+    // margin 
+    const float marginX = CAR_WIDTH / 2;
+    const float marginY = CAR_HEIGHT / 2;
+
+    // clip
+    curState.x = std::clamp(curState.x, -1.0f + marginX, 1.0f - marginX);
+    curState.y = std::clamp(curState.y, -1.0f + marginY, 1.0f - marginY);
+};
+/*
+NDC is abbeviated to Normalized Device Coordinates.
+If you want all the vertices to become visible, a clip process is needed between -1 and +1 after each vertex shader runs.
+Coordinates outside this range is not visible.  
+The coordinate for the center of the screen is (0, 0) and top is 1 and bottom is -1 on Y axis, right is +1 and left is -1 on X axis.
+
+Transforming coordinates to NDC is normally achieved in a step-by-step fashin where we transform an object's vertices to several coordinate systems before transforming them to NDC.
+There are a total of 5 different coordinate systems that are of essential to you.
+- Local space or Object space
+- World space
+- View space or Eye space
+- Clip space
+- Screen space
+
+TODO: Research these five coordinate systems to deepen my understanding.
+
+*/
