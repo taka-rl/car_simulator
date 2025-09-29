@@ -4,6 +4,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include "shaders/ShaderProgram.h"
+
 
 // simulation state
 struct State { float x, y; };
@@ -14,6 +16,7 @@ void processInput(GLFWwindow *window, float& ix, float& iy);
 void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy);
 void keepQuadNDC(State& prevState, State& curState) ;
 
+
 // settings
 // window size
 const unsigned int SCR_WIDTH = 800;
@@ -22,54 +25,6 @@ const unsigned int SCR_HEIGHT = 600;
 // rectangle as a car size
 const float CAR_WIDTH = 2.0 * PIXEL_TO_METER_SCALE;
 const float CAR_HEIGHT = 4.0 * PIXEL_TO_METER_SCALE;
-
-/*
-vertexShaderSource defines vertex shader that needs to be written in GLSL which is similar to C.
-In vertexShaderSource, you must declare all the input vertex attributes.
-vec2 is a data type that represents variables for 2D coordinate.
-vec3 is a data type that represents variables for 3D coordinate.
-layout is used for the location of the input variable.
-gl_Position is a predefined variable that store the position data
-- Example code
-#version 330 core
-layout (location = 0) in vec3 aPos;
-
-void main()
-{
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-}
-*/
-/*
-fragmentShaderSource defines fragment shader that calculates the color output of your pixels. 
-Fragment shader only requires one output varialbe that contains a vector of size 4 that define the final color output.
-vec4(1.0f, 0.5f, 0.2f, 1.0f) --> output orange-ish color.
-
-- Example code
-#version 330 core
-out vec4 FragColor;
-
-void main()
-{
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-} 
-
-*/
-
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "uniform vec2 uOffset;\n"
-    "void main()\n"
-    "{\n"
-    "   vec3 p = aPos + vec3(uOffset, 0.0);\n"
-    "   gl_Position = vec4(p, 1.0);\n"
-    "}\0";
-const char *fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n" // 1.0f, 0.8f, 0.2f, 1.0f: Yellow-ish color
-    "}\n\0";
-
 
 
 // Clamp accumulator to avoid spiral of death after stalls
@@ -121,46 +76,16 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+    // after gladLoadGLLoader(...)
+    int fbW = 0, fbH = 0;
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+    glViewport(0, 0, fbW, fbH);
+    // (optional) also trigger your callback once to keep all logic in one place:
+    framebuffer_size_callback(window, fbW, fbH);
 
     // build and compile our shader program
     // ------------------------------------
-    // vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // link shaders
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    // check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    ShaderProgram carShader("./src/shaders/carShader.vert", "./src/shaders/carShader.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -244,8 +169,8 @@ int main()
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // grab uniform location once
-    glUseProgram(shaderProgram);
-    int uOffsetLoc = glGetUniformLocation(shaderProgram, "uOffset");
+    carShader.use();
+    int uOffsetLoc = glGetUniformLocation(carShader.getShaderID(), "uOffset");
 
     // Turn on vsync 60FPS
     glfwSwapInterval(1);
@@ -294,7 +219,7 @@ int main()
 
         // draw a rectangle
         // draw our first triangle
-        glUseProgram(shaderProgram);
+        carShader.use();
         glUniform2f(uOffsetLoc, drawS.x, drawS.y);
         glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         //glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -311,7 +236,7 @@ int main()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shaderProgram);
+    glDeleteProgram(carShader.getShaderID());
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
