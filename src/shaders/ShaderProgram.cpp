@@ -3,8 +3,8 @@
 
 // constructor generates the shader on the fly
 // ------------------------------------------------------------------------
-ShaderProgram::ShaderProgram(const string vertexPath, const string fragmentPath) { 
-    ID = makeShader(vertexPath, fragmentPath);
+ShaderProgram::ShaderProgram(ShaderPaths paths) { 
+    ID = makeShader(paths);
 };
 
 
@@ -80,7 +80,7 @@ int ShaderProgram::loadShaderSource(unsigned int shaderObj, const string path) {
     return 0;
 };
 
-int ShaderProgram::makeShader(const string vertexPath, const string fragmentPath) {
+int ShaderProgram::makeShader(ShaderPaths paths) {
     
     // Create the shader objects
     unsigned int vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -91,8 +91,8 @@ int ShaderProgram::makeShader(const string vertexPath, const string fragmentPath
     // int compiled, linked;
 
     // Load shader source code from files
-    if (loadShaderSource(vertex, vertexPath)) return -1;
-    if (loadShaderSource(fragment, fragmentPath)) return -1;
+    if (loadShaderSource(vertex, paths.vertexPath)) return -1;
+    if (loadShaderSource(fragment, paths.fragmentPath)) return -1;
 
     // Compile the vertex shader
     glCompileShader(vertex);

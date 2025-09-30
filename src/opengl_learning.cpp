@@ -85,7 +85,8 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    ShaderProgram carShader("./src/shaders/carShader.vert", "./src/shaders/carShader.frag");
+    ShaderPaths paths = {"./src/shaders/carShader.vert", "./src/shaders/carShader.frag"};
+    ShaderProgram carShader(paths);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------

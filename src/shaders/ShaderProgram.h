@@ -11,6 +11,16 @@
 using namespace std;
 
 
+// paths for vertex and fragment shaders
+// ----------------------------------------------------------------------------
+struct ShaderPaths {
+    const string vertexPath;
+    const string fragmentPath;
+};
+
+
+// a general shader program class that can be used for different shaders
+// ----------------------------------------------------------------------------
 class ShaderProgram
 {
 protected:
@@ -18,7 +28,7 @@ protected:
 public:
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
-    ShaderProgram(string vertexPath, string fragmentPath);
+    ShaderProgram(ShaderPaths paths);
 
     // destructor 
     ~ShaderProgram() { if (ID) glDeleteProgram(ID); }
@@ -52,7 +62,7 @@ private:
 
     // creates shader program from vertex and fragment shader paths
     // ------------------------------------------------------------------------
-    int makeShader(const string vertexPath, const string fragmentPath);
+    int makeShader(ShaderPaths paths);
     
 };
 #endif
