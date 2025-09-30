@@ -4,7 +4,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "shaders/ShaderProgram.h"
+#include "shaders/CarShader.h"
 
 
 // simulation state
@@ -85,8 +85,7 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    ShaderPaths paths = {"./src/shaders/carShader.vert", "./src/shaders/carShader.frag"};
-    ShaderProgram carShader(paths);
+    CarShader carShader;
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
