@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "shaders/CarShader.h"
+#include "shaders/ParkingShader.h"
 #include "Loader.h"
 
 
@@ -26,6 +27,9 @@ const unsigned int SCR_HEIGHT = 600;
 // rectangle as a car size
 const float CAR_WIDTH = 2.0 * PIXEL_TO_METER_SCALE;
 const float CAR_HEIGHT = 4.0 * PIXEL_TO_METER_SCALE;
+
+const float PARKING_WIDTH = 4.0 * PIXEL_TO_METER_SCALE;
+const float PARKING_HEIGHT = 8.0 * PIXEL_TO_METER_SCALE;
 
 
 // Clamp accumulator to avoid spiral of death after stalls
@@ -87,25 +91,37 @@ int main()
     // build and compile our shader program
     // ------------------------------------
     CarShader carShader;
+    ParkingShader parkingShader;
+
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
+    float carVertices[] = {
         CAR_WIDTH / 2,  CAR_HEIGHT / 2, 0.0f,  // top right
         CAR_WIDTH / 2,  -CAR_HEIGHT / 2, 0.0f,  // bottom right
         -CAR_WIDTH / 2, -CAR_HEIGHT / 2, 0.0f,  // bottom left
         -CAR_WIDTH / 2, CAR_HEIGHT / 2, 0.0f   // top left 
     };
+
+    float parkingVertices[] = {
+        PARKING_WIDTH / 2,  PARKING_HEIGHT / 2, 0.0f,  // top right
+        PARKING_WIDTH / 2,  -PARKING_HEIGHT / 2, 0.0f,  // bottom right
+        -PARKING_WIDTH / 2, -PARKING_HEIGHT / 2, 0.0f,  // bottom left
+        -PARKING_WIDTH / 2, PARKING_HEIGHT / 2, 0.0f   // top left 
+    };
+
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     };
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
-    Loader carLoader(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
+    Loader carLoader(carVertices, sizeof(carVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
+    Loader parkingLoader(parkingVertices, sizeof(parkingVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
 
     // grab uniform location once
     carShader.use();
+    parkingShader.use();
     // int uOffsetLoc = glGetUniformLocation(carShader.getShaderID(), "uOffset");
 
     // Turn on vsync 60FPS
@@ -153,14 +169,19 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw a rectangle
-        // draw our first triangle
+        // draw a parking lot
+        parkingShader.use();
+        glUniform2f(parkingShader.getUOffsetLoc(), 0.2f, 0.2f);
+        glBindVertexArray(parkingLoader.getVAO());
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        
+        // draw a car
         carShader.use();
         glUniform2f(carShader.getUOffsetLoc(), drawS.x, drawS.y);
         glBindVertexArray(carLoader.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        //glDrawArrays(GL_TRIANGLES, 0, 6);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+        //glDrawArrays(GL_TRIANGLES, 0, 6);
+        
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -172,7 +193,7 @@ int main()
     // carLoader.~Loader(); // call destructor explicitly to delete VBO, VAO, EBO
     // carShader.~CarShader(); // call destructor explicitly to delete shader program
 
-    
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
