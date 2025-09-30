@@ -3,7 +3,7 @@
 
 // constructor generates the shader on the fly
 // ------------------------------------------------------------------------
-ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath) { 
+ShaderProgram::ShaderProgram(const string vertexPath, const string fragmentPath) { 
     ID = makeShader(vertexPath, fragmentPath);
 };
 
@@ -16,17 +16,17 @@ void ShaderProgram::use() {
 
 // utility uniform functions
 // ------------------------------------------------------------------------
-void ShaderProgram::setBool(const std::string &name, bool value) const {         
+void ShaderProgram::setBool(const string &name, bool value) const {         
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value); 
 };
 
 // ------------------------------------------------------------------------
-void ShaderProgram::setInt(const std::string &name, int value) const { 
+void ShaderProgram::setInt(const string &name, int value) const { 
     glUniform1i(glGetUniformLocation(ID, name.c_str()), value); 
 };
 
 // ------------------------------------------------------------------------
-void ShaderProgram::setFloat(const std::string &name, float value) const { 
+void ShaderProgram::setFloat(const string &name, float value) const { 
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
 };
 
@@ -38,38 +38,36 @@ const unsigned int ShaderProgram::getShaderID() {
 
 // utility function for checking shader compilation/linking errors.
 // ------------------------------------------------------------------------
-void ShaderProgram::checkCompileErrors(unsigned int shader, std::string type) {
+void ShaderProgram::checkCompileErrors(unsigned int shader, const string type) {
     int success;
     char infoLog[1024];
     if (type != "PROGRAM") {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        std::cout << success << std::endl;
         if (!success) {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << endl;
         }
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
-        std::cout << success << std::endl;
         if (!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << endl;
         }
     }
 };
 
-int ShaderProgram::loadShaderSource(unsigned int shaderObj, const char* path) {
+int ShaderProgram::loadShaderSource(unsigned int shaderObj, const string path) {
     
     // TODO: Add code to adjust the path in any cases where .exe file is executed. 
     // Open the file
-    std::ifstream ifs(path);
+    ifstream ifs(path);
     if (!ifs) {
-        std::cout << "error" << std::endl;
+        cout << "error" << endl;
         return -1;
     }
 
-    std::string source;
-    std::string line;
+    string source;
+    string line;
     while (getline(ifs, line)) {
         source += line + "\n";
     }
@@ -82,7 +80,7 @@ int ShaderProgram::loadShaderSource(unsigned int shaderObj, const char* path) {
     return 0;
 };
 
-int ShaderProgram::makeShader(const char* vertexPath, const char* fragmentPath) {
+int ShaderProgram::makeShader(const string vertexPath, const string fragmentPath) {
     
     // Create the shader objects
     unsigned int vertex = glCreateShader(GL_VERTEX_SHADER);

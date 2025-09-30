@@ -8,6 +8,8 @@
 #include <sstream>
 #include <iostream>
 
+using namespace std;
+
 
 class ShaderProgram
 {
@@ -16,7 +18,7 @@ protected:
 public:
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
-    ShaderProgram(const char* vertexPath, const char* fragmentPath);
+    ShaderProgram(string vertexPath, string fragmentPath);
 
     // destructor 
     ~ShaderProgram() { if (ID) glDeleteProgram(ID); }
@@ -27,13 +29,13 @@ public:
 
     // utility uniform functions
     // ------------------------------------------------------------------------
-    void setBool(const std::string &name, bool value) const;
+    void setBool(const string &name, bool value) const;
 
     // ------------------------------------------------------------------------
-    void setInt(const std::string &name, int value) const;
+    void setInt(const string &name, int value) const;
 
     // ------------------------------------------------------------------------
-    void setFloat(const std::string &name, float value) const;
+    void setFloat(const string &name, float value) const;
 
     // getter for shader ID
     // ------------------------------------------------------------------------
@@ -42,15 +44,15 @@ public:
 private:
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
-    void checkCompileErrors(unsigned int shader, std::string type);
+    void checkCompileErrors(unsigned int shader, const string type);
 
     // loads shader source code from files
     // ------------------------------------------------------------------------
-    int loadShaderSource(unsigned int shader, const char* path);
+    int loadShaderSource(unsigned int shader, string path);
 
     // creates shader program from vertex and fragment shader paths
     // ------------------------------------------------------------------------
-    int makeShader(const char* vertexPath, const char* fragmentPath);
+    int makeShader(const string vertexPath, const string fragmentPath);
     
 };
 #endif
