@@ -25,13 +25,14 @@ class ShaderProgram
 {
 protected:
     unsigned int ID;
+    int uOffsetLoc;
 public:
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
     ShaderProgram(ShaderPaths paths);
 
     // destructor 
-    ~ShaderProgram() { if (ID) glDeleteProgram(ID); }
+    ~ShaderProgram();
 
     // activate the shader
     // ------------------------------------------------------------------------
@@ -47,9 +48,15 @@ public:
     // ------------------------------------------------------------------------
     void setFloat(const string &name, float value) const;
 
-    // getter for shader ID
+    // getter
     // ------------------------------------------------------------------------
     const unsigned int getShaderID();
+
+    const unsigned int getUOffsetLoc();
+
+    // setter
+    // ------------------------------------------------------------------------
+    void setUniFormLocation(unsigned int& ID, const string& name);
 
 private:
     // utility function for checking shader compilation/linking errors.

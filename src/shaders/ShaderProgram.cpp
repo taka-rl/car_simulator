@@ -5,8 +5,15 @@
 // ------------------------------------------------------------------------
 ShaderProgram::ShaderProgram(ShaderPaths paths) { 
     ID = makeShader(paths);
+    setUniFormLocation(ID, "uOffset");
 };
 
+// destructor
+// ------------------------------------------------------------------------
+ShaderProgram::~ShaderProgram() { 
+    glDeleteProgram(ID);
+    cout << "ShaderProgram destructed, shader program deleted." << endl;
+};
 
 // activate the shader
 // ------------------------------------------------------------------------
@@ -35,6 +42,15 @@ void ShaderProgram::setFloat(const string &name, float value) const {
 const unsigned int ShaderProgram::getShaderID() {
     return ID;
 };
+const unsigned int ShaderProgram::getUOffsetLoc() { 
+    return uOffsetLoc; 
+};
+
+// setter 
+void ShaderProgram::setUniFormLocation(unsigned int& ID, const string& name) {
+    uOffsetLoc = glGetUniformLocation(ID, name.c_str());
+};
+
 
 // utility function for checking shader compilation/linking errors.
 // ------------------------------------------------------------------------
