@@ -23,13 +23,21 @@ OS Windows 10
     │   └── libglfw3dll.a               # 
     ├── src                             # src
     │   ├── shaders                     # 
-    |   │   ├── carShader.vert          # 
-    |   │   ├── carShader.frag          # 
+    |   │   ├── CarShader.cpp           # CarShader class 
+    |   │   ├── CarShader.h             # CarShader class header
+    |   │   ├── ParkingShader.cpp       # ParkingShader class 
+    |   │   ├── ParkingShader.h         # ParkingShader class header
+    |   │   ├── carShader.vert          # Shader for car
+    |   │   ├── carShader.frag          # Shader for car
+    |   │   ├── parkingShader.vert      # Shader for parking
+    |   │   ├── parkingShader.frag      # Shader for parking
     |   │   ├── ShaderProgram.cpp       # ShaderProgram class 
     |   │   └── ShaderProgram.h         # ShaderProgram class header
     │   ├── car.cpp                     # Car class
     │   ├── car.h                       #    
     │   ├── glad.c                      # 
+    │   ├── Loader.cpp                  # Loader class
+    │   ├── Loader.h                    # Loader class header
     │   ├── main.cpp                    # 
     │   ├── main_car.cpp                # Temp cpp file for car.cpp
     │   └── opengl_learning.cpp         # Temp cpp file for learning OpenGL
@@ -57,7 +65,11 @@ g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
     - [X] Understand basics of rendering on screen
     - [X] Create ShaderProgram class
     - [X] Load GLSL files from different files
+    - [X] Draw two rectangles as a car and parking lot
+    - [ ] Learn Transformation, GLM, and Coordinate systems
     - [ ] Collision check
+    - [ ] Draw a line that represents a car movement
+    - [ ] Copy code in opengl_learning.cpp to main.cpp as a base of the project
 
 ### Simulation environment
 - [ ] Draw a car with each wheel
