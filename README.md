@@ -40,7 +40,6 @@ OS Windows 10
     │   ├── Loader.h                    # Loader class header
     │   ├── main.cpp                    # 
     │   ├── main_car.cpp                # Temp cpp file for car.cpp
-    │   └── opengl_learning.cpp         # Temp cpp file for learning OpenGL
     ├── glfw3.dll                       # 
     └── README.md                       # Project documentation
     
@@ -50,7 +49,7 @@ OS Windows 10
 ### Build command
 ```cmd
 g++ src/main.cpp src/glad.c -o output/program_rectangle -Llib -Iinclude -lglfw3dll
-g++ -std=c++17 src/glad.c src/opengl_learning.cpp  src/shaders/ShaderProgram.cpp -o output/program_opengl_learning -Llib -Iinclude -lglfw3dll
+g++ -std=c++17 src/glad.c src/main.cpp  src/shaders/*.cpp  src/Loader.cpp -o output/program -Llib -Iinclude -lglfw3dll
 g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
 
 ```
@@ -58,7 +57,7 @@ g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
 ## Development Plan
 ### OpenGL
 #### 2D
-- [ ] Learn OpenGL basics
+- [X] Learn OpenGL basics
     - [X] Draw a rectangle
     - [X] Key inputs
     - [X] Move a rectangle based on the key inputs
@@ -66,22 +65,19 @@ g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
     - [X] Create ShaderProgram class
     - [X] Load GLSL files from different files
     - [X] Draw two rectangles as a car and parking lot
-    - [ ] Learn Transformation, GLM, and Coordinate systems
-    - [ ] Collision check
-    - [ ] Draw a line that represents a car movement
-    - [ ] Copy code in opengl_learning.cpp to main.cpp as a base of the project
 
 ### Simulation environment
-- [ ] Draw a car with each wheel
-- [ ] Draw a car trajectory line
-- [ ] Create a simple map
-- [ ] Simulation setup
-    - [ ] Introduce acceleration and steering inputs
-    - [ ] Create discrete/continuous modes
+- [ ] Develop a parking environment
+    - [ ] Draw a car with each wheel
+    - [ ] Draw a car trajectory line
+    - [ ] Create a simple map
+    - [ ] Introcude a kinematic bicycle model to simulate the car movement
+    - [ ] Introduce acceleration and steering inputs with discrete action space
+    - [ ] Introduce continuous action space
+    - [ ] Set the parking lot randomly
+    - [ ] Add code to determine if the car is parked
+- [ ] Introduce reinforcement learning for the parking
 
-### Car
-- [ ] Implement Kinematic bicycle model
-- [ ] Implement Dynamic bicycle model
 
 ### Future development ideas
 - Path finding
