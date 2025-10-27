@@ -12,78 +12,72 @@ ShaderProgram::ShaderProgram(ShaderPaths paths) {
 // ------------------------------------------------------------------------
 ShaderProgram::~ShaderProgram() { 
     glDeleteProgram(ID);
-    cout << "ShaderProgram destructed, shader program deleted." << endl;
+    std::cout << "ShaderProgram destructed, shader program deleted." << std::endl;
 };
 
 // activate the shader
 // ------------------------------------------------------------------------
-void ShaderProgram::use() {
-    glUseProgram(ID); 
-};
+void ShaderProgram::use() const { glUseProgram(ID); };
 
 // utility uniform functions
 // ------------------------------------------------------------------------
-void ShaderProgram::setBool(const string &name, bool value) const {         
+void ShaderProgram::setBool(const std::string &name, bool value) const {         
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value); 
 };
 
 // ------------------------------------------------------------------------
-void ShaderProgram::setInt(const string &name, int value) const { 
+void ShaderProgram::setInt(const std::string &name, int value) const { 
     glUniform1i(glGetUniformLocation(ID, name.c_str()), value); 
 };
 
 // ------------------------------------------------------------------------
-void ShaderProgram::setFloat(const string &name, float value) const { 
+void ShaderProgram::setFloat(const std::string &name, float value) const { 
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
 };
 
 // getter for shader ID
 // ------------------------------------------------------------------------
-const unsigned int ShaderProgram::getShaderID() {
-    return ID;
-};
-const unsigned int ShaderProgram::getUOffsetLoc() { 
-    return uOffsetLoc; 
-};
+const unsigned int ShaderProgram::getShaderID() const noexcept { return ID; };
+const unsigned int ShaderProgram::getUOffsetLoc() const noexcept { return uOffsetLoc; };
 
 // setter 
-void ShaderProgram::setUniFormLocation(unsigned int& ID, const string& name) {
+void ShaderProgram::setUniFormLocation(unsigned int& ID, const std::string& name) {
     uOffsetLoc = glGetUniformLocation(ID, name.c_str());
 };
 
 
 // utility function for checking shader compilation/linking errors.
 // ------------------------------------------------------------------------
-void ShaderProgram::checkCompileErrors(unsigned int shader, const string type) {
+void ShaderProgram::checkCompileErrors(unsigned int shader, const std::string type) {
     int success;
     char infoLog[1024];
     if (type != "PROGRAM") {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success) {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << endl;
+            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
         }
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if (!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << endl;
+            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
         }
     }
 };
 
-int ShaderProgram::loadShaderSource(unsigned int shaderObj, const string path) {
+int ShaderProgram::loadShaderSource(unsigned int shaderObj, const std::string path) {
     
     // TODO: Add code to adjust the path in any cases where .exe file is executed. 
     // Open the file
-    ifstream ifs(path);
+    std::ifstream ifs(path);
     if (!ifs) {
-        cout << "error" << endl;
+        std::cout << "error" << std::endl;
         return -1;
     }
 
-    string source;
-    string line;
+    std::string source;
+    std::string line;
     while (getline(ifs, line)) {
         source += line + "\n";
     }

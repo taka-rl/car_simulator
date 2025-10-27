@@ -45,22 +45,14 @@ Loader::~Loader() {
     glDeleteBuffers(1, &vbo);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &ebo);
-    cout << "Loader destructed, VBO, VAO, EBO deleted." << endl;
+    std::cout << "Loader destructed, VBO, VAO, EBO deleted." << std::endl;
 };
 
 // getter for VBO, VAO, EBO
 // ------------------------------------------------------------------------ 
-unsigned int Loader::getVBO() {
-    return vbo;
-};
-
-unsigned int Loader::getVAO() {
-    return vao;
-};
-
-unsigned int Loader::getEBO() {
-    return ebo;
-};
+unsigned int Loader::getVBO() const { return vbo; };
+unsigned int Loader::getVAO() const { return vao; };
+unsigned int Loader::getEBO() const { return ebo; };
 
 // create VBO, VAO, EBO
 // ------------------------------------------------------------------------

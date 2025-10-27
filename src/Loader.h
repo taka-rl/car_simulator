@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 #include <iostream>
-using namespace std;
+
 
 /*
 TODO: Deepen the understanding of VBO, VAO and EBO later.
@@ -54,9 +54,9 @@ public:
 
     // getter for VBO, VAO, EBO
     // ------------------------------------------------------------------------
-    unsigned int getVBO();
-    unsigned int getVAO();
-    unsigned int getEBO();
+    unsigned int getVBO() const;
+    unsigned int getVAO() const;
+    unsigned int getEBO() const;
 
     // create VBO, VAO, EBO
     // ------------------------------------------------------------------------
@@ -66,4 +66,3 @@ public:
 
 };
 #endif
-

@@ -120,8 +120,8 @@ int main()
     Loader parkingLoader(parkingVertices, sizeof(parkingVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
 
     // grab uniform location once
-    carShader.use();
-    parkingShader.use();
+    // carShader.use();
+    // parkingShader.use();
     // int uOffsetLoc = glGetUniformLocation(carShader.getShaderID(), "uOffset");
 
     // Turn on vsync 60FPS

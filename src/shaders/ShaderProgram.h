@@ -8,14 +8,12 @@
 #include <sstream>
 #include <iostream>
 
-using namespace std;
-
 
 // paths for vertex and fragment shaders
 // ----------------------------------------------------------------------------
 struct ShaderPaths {
-    const string vertexPath;
-    const string fragmentPath;
+    const std::string vertexPath;
+    const std::string fragmentPath;
 };
 
 
@@ -36,36 +34,35 @@ public:
 
     // activate the shader
     // ------------------------------------------------------------------------
-    void use();
+    void use() const;
 
     // utility uniform functions
     // ------------------------------------------------------------------------
-    void setBool(const string &name, bool value) const;
+    void setBool(const std::string &name, bool value) const;
 
     // ------------------------------------------------------------------------
-    void setInt(const string &name, int value) const;
+    void setInt(const std::string &name, int value) const;
 
     // ------------------------------------------------------------------------
-    void setFloat(const string &name, float value) const;
+    void setFloat(const std::string &name, float value) const;
 
     // getter
     // ------------------------------------------------------------------------
-    const unsigned int getShaderID();
-
-    const unsigned int getUOffsetLoc();
+    const unsigned int getShaderID() const noexcept;
+    const unsigned int getUOffsetLoc() const noexcept;
 
     // setter
     // ------------------------------------------------------------------------
-    void setUniFormLocation(unsigned int& ID, const string& name);
+    void setUniFormLocation(unsigned int& ID, const std::string& name);
 
 private:
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
-    void checkCompileErrors(unsigned int shader, const string type);
+    void checkCompileErrors(unsigned int shader, const std::string type);
 
     // loads shader source code from files
     // ------------------------------------------------------------------------
-    int loadShaderSource(unsigned int shader, string path);
+    int loadShaderSource(unsigned int shader, std::string path);
 
     // creates shader program from vertex and fragment shader paths
     // ------------------------------------------------------------------------
