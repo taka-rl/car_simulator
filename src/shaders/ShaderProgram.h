@@ -23,7 +23,7 @@ class ShaderProgram
 {
 protected:
     unsigned int ID;
-    int uOffsetLoc;
+
 public:
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
@@ -49,11 +49,6 @@ public:
     // getter
     // ------------------------------------------------------------------------
     const unsigned int getShaderID() const noexcept;
-    const unsigned int getUOffsetLoc() const noexcept;
-
-    // setter
-    // ------------------------------------------------------------------------
-    void setUniFormLocation(unsigned int& ID, const std::string& name);
 
 private:
     // utility function for checking shader compilation/linking errors.

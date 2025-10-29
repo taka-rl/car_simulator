@@ -4,8 +4,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "shaders/CarShader.h"
-#include "shaders/ParkingShader.h"
+#include "shaders/RectShader.h"
 #include "Loader.h"
 
 
@@ -90,8 +89,8 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    CarShader carShader;
-    ParkingShader parkingShader;
+    RectShader carShader;
+    RectShader parkingShader;
 
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -171,13 +170,15 @@ int main()
 
         // draw a parking lot
         parkingShader.use();
-        glUniform2f(parkingShader.getUOffsetLoc(), 0.2f, 0.2f);
+        parkingShader.setOffset(0.2f, 0.2f);
+        parkingShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
         glBindVertexArray(parkingLoader.getVAO());
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
         // draw a car
         carShader.use();
-        glUniform2f(carShader.getUOffsetLoc(), drawS.x, drawS.y);
+        carShader.setOffset(drawS.x, drawS.y);
+        carShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
         glBindVertexArray(carLoader.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, 6);
