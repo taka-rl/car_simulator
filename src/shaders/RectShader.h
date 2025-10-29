@@ -25,16 +25,15 @@ public:
 
     // setter
     // ------------------------------------------------------------------------
-    void setUniformLocation();
-    void setUniformColor();
-
     void setColor(float r, float g, float b, float a) const;
-
     void setOffset(float x, float y) const;
     
-
     // Not changing behavior; inherit the base use()
     using ShaderProgram::use;
+
+private:
+    void cacheOffsetLocation();
+    void cacheColorLocation();
 
 };
 #endif
