@@ -9,6 +9,7 @@ ShaderPaths RECT_SHADER_PATHS = {"./src/shaders/rectShader.vert", "./src/shaders
 RectShader::RectShader() : ShaderProgram(RECT_SHADER_PATHS) {
     cacheOffsetLocation();
     cacheColorLocation();
+    cacheScaleLocation();
 }
 
 // getter
@@ -29,6 +30,10 @@ void RectShader::setOffset(float x, float y) const {
     if (uOffsetLoc_ != -1) glUniform2f(uOffsetLoc_, x, y);
 }
 
+void RectShader::setScale(float x, float y) const {
+    if (uScaleLoc_ != -1) glUniform2f(uScaleLoc_, x, y);
+}
+
 // cache uOffset
 // ------------------------------------------------------------------------
 void RectShader::cacheOffsetLocation() {
@@ -39,4 +44,10 @@ void RectShader::cacheOffsetLocation() {
 // ------------------------------------------------------------------------
 void RectShader::cacheColorLocation() {
     uColorLoc_ = glGetUniformLocation(ID, "uColor");
+}
+
+// cache uScale
+// ------------------------------------------------------------------------
+void RectShader::cacheScaleLocation() {
+    uScaleLoc_ = glGetUniformLocation(ID, "uScale");
 }

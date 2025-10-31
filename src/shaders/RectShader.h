@@ -12,6 +12,7 @@ class RectShader : public ShaderProgram {
 private:
     int uOffsetLoc_ = -1;
     int uColorLoc_ = -1;
+    int uScaleLoc_ = -1;
 
 public:
     // constructor generates the shader on the fly
@@ -27,6 +28,7 @@ public:
     // ------------------------------------------------------------------------
     void setColor(float r, float g, float b, float a) const;
     void setOffset(float x, float y) const;
+    void setScale(float x, float y) const;
     
     // Not changing behavior; inherit the base use()
     using ShaderProgram::use;
@@ -34,6 +36,7 @@ public:
 private:
     void cacheOffsetLocation();
     void cacheColorLocation();
+    void cacheScaleLocation();
 
 };
 #endif

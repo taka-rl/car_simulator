@@ -9,8 +9,9 @@
 
 
 // simulation state
+// simulation state stays as meters
 struct State { float x, y; };
-const float PIXEL_TO_METER_SCALE = 0.05;
+const float PPM = 20;  // 1 pixel is 0.05 m (5 cm)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window, float& ix, float& iy);
@@ -23,12 +24,13 @@ void keepQuadNDC(State& prevState, State& curState) ;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// rectangle as a car size
-const float CAR_WIDTH = 2.0 * PIXEL_TO_METER_SCALE;
-const float CAR_HEIGHT = 4.0 * PIXEL_TO_METER_SCALE;
+// rectangle as a car size in meters
+const float CAR_WIDTH = 2.0;
+const float CAR_HEIGHT = 4.0;
 
-const float PARKING_WIDTH = 4.0 * PIXEL_TO_METER_SCALE;
-const float PARKING_HEIGHT = 8.0 * PIXEL_TO_METER_SCALE;
+// rectangle as a parking lot size in meters
+const float PARKING_WIDTH = 4.0;
+const float PARKING_HEIGHT = 8.0;
 
 
 // Clamp accumulator to avoid spiral of death after stalls
@@ -46,6 +48,33 @@ inline State interp(const State& prev, const State& curr, float alpha) {
         lerp(prev.x, curr.x, alpha),
         lerp(prev.y, curr.y, alpha)
     };
+}
+
+// meters to NDC
+inline State metersToNDC(float x_m, float y_m, int fbW, int fbH, float ppm) {
+    const float Wm = fbW / ppm, Hm = fbH / ppm;
+    return State{
+        x_m / (Wm * 0.5f),
+        y_m / (Hm * 0.5f)
+    };
+}
+
+// rect size in NDC (from meters)
+inline State rectScaleNDC(float width_m, float height_m, int fbW, int fbH, float ppm) {
+    return State{
+        2.0f * width_m * ppm / fbW,
+        2.0f * height_m * ppm / fbH
+    };
+};
+
+// keep car on screen with meters
+inline void keepCarOnScreenMeters(State& s, int fbW, int fbH, float ppm) {
+    const float worldHalfW = (fbW / ppm) * 0.5f;
+    const float worldHalfH = (fbH / ppm) * 0.5f;
+    const float marginX = CAR_WIDTH  * 0.5f;
+    const float marginY = CAR_HEIGHT * 0.5f;
+    s.x = std::clamp(s.x, -worldHalfW + marginX, worldHalfW - marginX);
+    s.y = std::clamp(s.y, -worldHalfH + marginY, worldHalfH - marginY);
 }
 
 int main()
@@ -92,22 +121,12 @@ int main()
     RectShader carShader;
     RectShader parkingShader;
 
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float carVertices[] = {
-        CAR_WIDTH / 2,  CAR_HEIGHT / 2, 0.0f,  // top right
-        CAR_WIDTH / 2,  -CAR_HEIGHT / 2, 0.0f,  // bottom right
-        -CAR_WIDTH / 2, -CAR_HEIGHT / 2, 0.0f,  // bottom left
-        -CAR_WIDTH / 2, CAR_HEIGHT / 2, 0.0f   // top left 
-    };
-
-    float parkingVertices[] = {
-        PARKING_WIDTH / 2,  PARKING_HEIGHT / 2, 0.0f,  // top right
-        PARKING_WIDTH / 2,  -PARKING_HEIGHT / 2, 0.0f,  // bottom right
-        -PARKING_WIDTH / 2, -PARKING_HEIGHT / 2, 0.0f,  // bottom left
-        -PARKING_WIDTH / 2, PARKING_HEIGHT / 2, 0.0f   // top left 
-    };
+    float vertices[] = {
+        0.5,  0.5, 0.0f,  // top right
+        0.5,  -0.5, 0.0f,  // bottom right
+        -0.5, -0.5, 0.0f,  // bottom left
+        -0.5, 0.5, 0.0f   // top left 
+        };
 
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
@@ -115,9 +134,9 @@ int main()
     };
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
-    Loader carLoader(carVertices, sizeof(carVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
-    Loader parkingLoader(parkingVertices, sizeof(parkingVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
-
+    Loader carLoader(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
+    Loader parkingLoader(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
+    
     // grab uniform location once
     // carShader.use();
     // parkingShader.use();
@@ -156,12 +175,20 @@ int main()
         // fixed-step simulation
         while (accumulator >= simDt) {
             step(prevState, curState, simDt, ix, iy);
+            keepCarOnScreenMeters(curState, fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
         State drawS = interp(prevState, curState, alpha);
+        
+        // car
+        State s_ndc = rectScaleNDC(CAR_WIDTH, CAR_HEIGHT, fbW, fbH, PPM);
+        State ndc = metersToNDC(drawS.x, drawS.y, fbW, fbH, PPM);
+
+        // parking
+        State parkingS_ndc = rectScaleNDC(PARKING_WIDTH, PARKING_HEIGHT, fbW, fbH, PPM);
 
         // render
         // ------
@@ -172,13 +199,15 @@ int main()
         parkingShader.use();
         parkingShader.setOffset(0.2f, 0.2f);
         parkingShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
+        parkingShader.setScale(parkingS_ndc.x, parkingS_ndc.y);
         glBindVertexArray(parkingLoader.getVAO());
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
         // draw a car
         carShader.use();
-        carShader.setOffset(drawS.x, drawS.y);
+        carShader.setOffset(ndc.x, ndc.y);
         carShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
+        carShader.setScale(s_ndc.x, s_ndc.y);
         glBindVertexArray(carLoader.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -235,33 +264,17 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 // ---------------------------------------------------------------------------------------------------------
 void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy) {
     // simple kinematic “speed” in NDC units per second
-    const float SPEED = 0.8f;
+    const float SPEED_MS = 1.0f;  // 1 m/s
 
     // shift previous → current for interpolation
     prevState = curState;
 
     // apply input as velocity command
-    curState.x += (ix * SPEED) * static_cast<float>(simDt);
-    curState.y += (iy * SPEED) * static_cast<float>(simDt);
-
-    // debug to see coordinates
-    // std::cout << "X: " << curState.x << ", Y: " << curState.y << std::endl;
-
-    // keep quad fully on screen: NDC [-1, +1]
-    keepQuadNDC(prevState, curState);
+    curState.x += (ix * SPEED_MS) * static_cast<float>(simDt);
+    curState.y += (iy * SPEED_MS) * static_cast<float>(simDt);
 };
 
-// Keep quadrangle fully on screen: NDC [-1, +1]
-// ---------------------------------------------------------------------------------------------------------
-void keepQuadNDC(State& prevState, State& curState) {
-    // margin 
-    const float marginX = CAR_WIDTH / 2;
-    const float marginY = CAR_HEIGHT / 2;
 
-    // clip
-    curState.x = std::clamp(curState.x, -1.0f + marginX, 1.0f - marginX);
-    curState.y = std::clamp(curState.y, -1.0f + marginY, 1.0f - marginY);
-};
 /*
 NDC is abbeviated to Normalized Device Coordinates.
 If you want all the vertices to become visible, a clip process is needed between -1 and +1 after each vertex shader runs.
@@ -279,3 +292,4 @@ There are a total of 5 different coordinate systems that are of essential to you
 TODO: Research these five coordinate systems to deepen my understanding.
 
 */
+
