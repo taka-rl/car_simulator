@@ -16,8 +16,6 @@ const float PPM = 20;  // 1 pixel is 0.05 m (5 cm)
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window, float& ix, float& iy);
 void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy);
-void keepQuadNDC(State& prevState, State& curState) ;
-
 
 // settings
 // window size
@@ -50,7 +48,7 @@ inline State interp(const State& prev, const State& curr, float alpha) {
     };
 }
 
-// meters to NDC
+// converts a point (the object center in meters) into an NDC position for uOffset
 inline State metersToNDC(float x_m, float y_m, int fbW, int fbH, float ppm) {
     const float Wm = fbW / ppm, Hm = fbH / ppm;
     return State{
@@ -59,7 +57,7 @@ inline State metersToNDC(float x_m, float y_m, int fbW, int fbH, float ppm) {
     };
 }
 
-// rect size in NDC (from meters)
+// convcrts a full size (meters) into an NDC full size. for uScale
 inline State rectScaleNDC(float width_m, float height_m, int fbW, int fbH, float ppm) {
     return State{
         2.0f * width_m * ppm / fbW,
@@ -67,7 +65,7 @@ inline State rectScaleNDC(float width_m, float height_m, int fbW, int fbH, float
     };
 };
 
-// keep car on screen with meters
+// keep the entire rectangle visible on screen.
 inline void keepCarOnScreenMeters(State& s, int fbW, int fbH, float ppm) {
     const float worldHalfW = (fbW / ppm) * 0.5f;
     const float worldHalfH = (fbH / ppm) * 0.5f;
@@ -118,8 +116,7 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    RectShader carShader;
-    RectShader parkingShader;
+    RectShader rectShader;
 
     float vertices[] = {
         0.5,  0.5, 0.0f,  // top right
@@ -134,8 +131,7 @@ int main()
     };
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
-    Loader carLoader(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
-    Loader parkingLoader(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
+    Loader quad(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
     
     // grab uniform location once
     // carShader.use();
@@ -196,19 +192,19 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw a parking lot
-        parkingShader.use();
-        parkingShader.setOffset(0.2f, 0.2f);
-        parkingShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
-        parkingShader.setScale(parkingS_ndc.x, parkingS_ndc.y);
-        glBindVertexArray(parkingLoader.getVAO());
+        rectShader.use();
+        rectShader.setOffset(0.2f, 0.2f);
+        rectShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
+        rectShader.setScale(parkingS_ndc.x, parkingS_ndc.y);
+        glBindVertexArray(quad.getVAO());
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
         // draw a car
-        carShader.use();
-        carShader.setOffset(ndc.x, ndc.y);
-        carShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
-        carShader.setScale(s_ndc.x, s_ndc.y);
-        glBindVertexArray(carLoader.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+        rectShader.use();
+        rectShader.setOffset(ndc.x, ndc.y);
+        rectShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
+        rectShader.setScale(s_ndc.x, s_ndc.y);
+        glBindVertexArray(quad.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, 6);
         
