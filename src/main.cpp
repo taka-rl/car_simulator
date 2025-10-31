@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <array>
+#include <cmath>
 
 #include "shaders/RectShader.h"
 #include "Loader.h"
@@ -156,12 +157,15 @@ int main()
 
     // simulation state (previous and current for interpolation)
     State prevState{0,0}, curState{0,0};
+    float yaw = 0.5f; // about 30 degrees
 
     // inputs
     float ix = 0.0f, iy = 0.0f;
 
     // wheels
     VehicleParams vehicleParams;
+
+    // wheel anchors in car-local frame
     const std::array<float, 2> anchors[4] = {
         {+vehicleParams.Lf, +vehicleParams.track*0.5f}, {+vehicleParams.Lf, -vehicleParams.track*0.5f},
         {-vehicleParams.Lr, -vehicleParams.track*0.5f}, {-vehicleParams.Lr, +vehicleParams.track*0.5f}
@@ -209,16 +213,18 @@ int main()
         // draw a parking lot
         rectShader.use();
         rectShader.setOffset(0.2f, 0.2f);
-        rectShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
+        rectShader.setYaw(0.0);  // temoprary set 0
         rectShader.setScale(parkingS_ndc.x, parkingS_ndc.y);
+        rectShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
         glBindVertexArray(quad.getVAO());
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
         // draw a car
         rectShader.use();
         rectShader.setOffset(ndc.x, ndc.y);
-        rectShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
+        rectShader.setYaw(0.0);  // temoprary set 0
         rectShader.setScale(s_ndc.x, s_ndc.y);
+        rectShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
         glBindVertexArray(quad.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -227,17 +233,21 @@ int main()
         rectShader.use();
         for (int i=0; i<4; i++) {
 
+            // get an anchor for each wheel
             const float ax = anchors[i][0];
             const float ay = anchors[i][1];
 
-            const float wx_m = drawS.x + ax;
-            const float wy_m = drawS.y + ay;
+            // calculate rotation
+            const float c = cosf(yaw), s = sinf(yaw);
+            const float wx_m = drawS.x + (c*ax - s*ay);
+            const float wy_m = drawS.y + (s*ax + c*ay);
 
+            // translate meters to NDC for render
             const State w_ndc  = metersToNDC(wx_m, wy_m, fbW, fbH, PPM);
             const State ws_ndc = rectScaleNDC(vehicleParams.wheel.width, vehicleParams.wheel.length, fbW, fbH, PPM);
             
             rectShader.setOffset(w_ndc.x, w_ndc.y);
-            // rectShader.setYaw(front ? psi + steer : psi); // add later
+            rectShader.setYaw(yaw);
             rectShader.setScale(ws_ndc.x, ws_ndc.y);
             rectShader.setColor(0.4f, 0.4f, 0.4f, 1.0f);
             glBindVertexArray(quad.getVAO());

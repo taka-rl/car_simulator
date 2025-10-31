@@ -10,6 +10,7 @@ RectShader::RectShader() : ShaderProgram(RECT_SHADER_PATHS) {
     cacheOffsetLocation();
     cacheColorLocation();
     cacheScaleLocation();
+    cacheYawLocation();
 }
 
 // getter
@@ -34,6 +35,10 @@ void RectShader::setScale(float x, float y) const {
     if (uScaleLoc_ != -1) glUniform2f(uScaleLoc_, x, y);
 }
 
+void RectShader::setYaw(float yaw) const {
+    if (uYawLoc_ != -1) glUniform1f(uYawLoc_, yaw);
+}
+
 // cache uOffset
 // ------------------------------------------------------------------------
 void RectShader::cacheOffsetLocation() {
@@ -50,4 +55,10 @@ void RectShader::cacheColorLocation() {
 // ------------------------------------------------------------------------
 void RectShader::cacheScaleLocation() {
     uScaleLoc_ = glGetUniformLocation(ID, "uScale");
+}
+
+// cache uYaw
+// ------------------------------------------------------------------------
+void RectShader::cacheYawLocation() {
+    uYawLoc_ = glGetUniformLocation(ID, "uYaw");
 }
