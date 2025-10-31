@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <array>
 
 #include "shaders/RectShader.h"
 #include "Loader.h"
@@ -30,6 +31,13 @@ const float CAR_HEIGHT = 4.0;
 const float PARKING_WIDTH = 4.0;
 const float PARKING_HEIGHT = 8.0;
 
+// wheels
+struct WheelSize { float length{0.75}, width{0.35}; };
+struct VehicleParams {
+    float Lf{0.75}, Lr{0.75}, track{2.5};
+    WheelSize wheel{0.75, 0.35};
+    float carWid{CAR_WIDTH}, carLen{CAR_HEIGHT};
+};
 
 // Clamp accumulator to avoid spiral of death after stalls
 inline void clampAccumulator(double& accum, const double simDt, double maxSteps = 5.0) {
@@ -152,6 +160,13 @@ int main()
     // inputs
     float ix = 0.0f, iy = 0.0f;
 
+    // wheels
+    VehicleParams vehicleParams;
+    const std::array<float, 2> anchors[4] = {
+        {+vehicleParams.Lf, +vehicleParams.track*0.5f}, {+vehicleParams.Lf, -vehicleParams.track*0.5f},
+        {-vehicleParams.Lr, -vehicleParams.track*0.5f}, {-vehicleParams.Lr, +vehicleParams.track*0.5f}
+    };
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -207,6 +222,28 @@ int main()
         glBindVertexArray(quad.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // wheels
+        rectShader.use();
+        for (int i=0; i<4; i++) {
+
+            const float ax = anchors[i][0];
+            const float ay = anchors[i][1];
+
+            const float wx_m = drawS.x + ax;
+            const float wy_m = drawS.y + ay;
+
+            const State w_ndc  = metersToNDC(wx_m, wy_m, fbW, fbH, PPM);
+            const State ws_ndc = rectScaleNDC(vehicleParams.wheel.width, vehicleParams.wheel.length, fbW, fbH, PPM);
+            
+            rectShader.setOffset(w_ndc.x, w_ndc.y);
+            // rectShader.setYaw(front ? psi + steer : psi); // add later
+            rectShader.setScale(ws_ndc.x, ws_ndc.y);
+            rectShader.setColor(0.4f, 0.4f, 0.4f, 1.0f);
+            glBindVertexArray(quad.getVAO());
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        }
+        
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
