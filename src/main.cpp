@@ -8,11 +8,12 @@
 
 #include "shaders/RectShader.h"
 #include "Loader.h"
+#include "entities/Entity.h"
 
 
 // simulation state
 // simulation state stays as meters
-struct State { float x, y; };
+
 const float PPM = 20;  // 1 pixel is 0.05 m (5 cm)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -159,6 +160,11 @@ int main()
     State prevState{0,0}, curState{0,0};
     float yaw = 0.5f; // about 30 degrees
 
+    // entities
+    Entity carEntity(&quad, &rectShader);
+    carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
+    carEntity.setYaw(yaw);
+
     // inputs
     float ix = 0.0f, iy = 0.0f;
 
@@ -199,8 +205,10 @@ int main()
         State drawS = interp(prevState, curState, alpha);
         
         // car
-        State s_ndc = rectScaleNDC(CAR_WIDTH, CAR_HEIGHT, fbW, fbH, PPM);
-        State ndc = metersToNDC(drawS.x, drawS.y, fbW, fbH, PPM);
+        // State s_ndc = rectScaleNDC(CAR_WIDTH, CAR_HEIGHT, fbW, fbH, PPM);
+        // State ndc = metersToNDC(drawS.x, drawS.y, fbW, fbH, PPM);
+        carEntity.setScale(rectScaleNDC(CAR_WIDTH, CAR_HEIGHT, fbW, fbH, PPM));
+        carEntity.setPos(metersToNDC(drawS.x, drawS.y, fbW, fbH, PPM));
 
         // parking
         State parkingS_ndc = rectScaleNDC(PARKING_WIDTH, PARKING_HEIGHT, fbW, fbH, PPM);
@@ -220,11 +228,12 @@ int main()
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
         // draw a car
-        rectShader.use();
-        rectShader.setOffset(ndc.x, ndc.y);
-        rectShader.setYaw(0.0);  // temoprary set 0
-        rectShader.setScale(s_ndc.x, s_ndc.y);
-        rectShader.setColor(0.15f, 0.65f, 0.15f, 1.0f);
+        carEntity.rectShader->use();
+        carEntity.rectShader->setOffset(carEntity.getPosX(), carEntity.getPosY());
+        carEntity.rectShader->setYaw(carEntity.getYaw());  // temoprary set 0
+        carEntity.rectShader->setScale(carEntity.getScaleX(), carEntity.getScaleY());
+        const auto& c = carEntity.getColor();
+        carEntity.rectShader->setColor(c[0], c[1], c[2], c[3]);
         glBindVertexArray(quad.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //glDrawArrays(GL_TRIANGLES, 0, 6);
