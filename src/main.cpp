@@ -9,6 +9,7 @@
 #include "shaders/RectShader.h"
 #include "Loader.h"
 #include "entities/Entity.h"
+#include "renderers/Renderer.h"
 
 
 // simulation state
@@ -58,32 +59,17 @@ inline State interp(const State& prev, const State& curr, float alpha) {
     };
 }
 
-// converts a point (the object center in meters) into an NDC position for uOffset
-inline State metersToNDC(float x_m, float y_m, int fbW, int fbH, float ppm) {
-    const float Wm = fbW / ppm, Hm = fbH / ppm;
-    return State{
-        x_m / (Wm * 0.5f),
-        y_m / (Hm * 0.5f)
-    };
-}
-
-// convcrts a full size (meters) into an NDC full size. for uScale
-inline State rectScaleNDC(float width_m, float height_m, int fbW, int fbH, float ppm) {
-    return State{
-        2.0f * width_m * ppm / fbW,
-        2.0f * height_m * ppm / fbH
-    };
-};
-
 // keep the entire rectangle visible on screen.
-inline void keepCarOnScreenMeters(State& s, int fbW, int fbH, float ppm) {
+// ------------------------------------------------------------------------
+inline void keepOnScreenMeters(State& s, float width_m, float height_m, int fbW, int fbH, float ppm) {
     const float worldHalfW = (fbW / ppm) * 0.5f;
     const float worldHalfH = (fbH / ppm) * 0.5f;
-    const float marginX = CAR_WIDTH  * 0.5f;
-    const float marginY = CAR_HEIGHT * 0.5f;
+    const float marginX = width_m * 0.5f;
+    const float marginY = height_m * 0.5f;
     s.x = std::clamp(s.x, -worldHalfW + marginX, worldHalfW - marginX);
     s.y = std::clamp(s.y, -worldHalfH + marginY, worldHalfH - marginY);
-}
+};
+
 
 int main()
 {
@@ -129,10 +115,10 @@ int main()
     RectShader rectShader;
 
     float vertices[] = {
-        0.5,  0.5, 0.0f,  // top right
-        0.5,  -0.5, 0.0f,  // bottom right
-        -0.5, -0.5, 0.0f,  // bottom left
-        -0.5, 0.5, 0.0f   // top left 
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f,  -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f, 0.5f, 0.0f   // top left 
         };
 
     unsigned int indices[] = {  // note that we start from 0!
@@ -160,11 +146,6 @@ int main()
     State prevState{0,0}, curState{0,0};
     float yaw = 0.5f; // about 30 degrees
 
-    // entities
-    Entity carEntity(&quad, &rectShader);
-    carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
-    carEntity.setYaw(yaw);
-
     // inputs
     float ix = 0.0f, iy = 0.0f;
 
@@ -175,6 +156,46 @@ int main()
     const std::array<float, 2> anchors[4] = {
         {+vehicleParams.Lf, +vehicleParams.track*0.5f}, {+vehicleParams.Lf, -vehicleParams.track*0.5f},
         {-vehicleParams.Lr, -vehicleParams.track*0.5f}, {-vehicleParams.Lr, +vehicleParams.track*0.5f}
+    };
+
+    // renderer
+    Renderer renderer(PPM, fbW, fbH);
+
+    // entities
+    Entity carEntity(&quad, &rectShader);
+    carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
+    carEntity.setYaw(yaw);
+    carEntity.setWidth(CAR_WIDTH);
+    carEntity.setHeight(CAR_HEIGHT);
+
+    Entity parkingEntity(&quad, &rectShader);
+    parkingEntity.setColor({1.0f, 0.8f, 0.2f, 1.0f});
+    parkingEntity.setYaw(0.0f);
+    parkingEntity.setWidth(PARKING_WIDTH);
+    parkingEntity.setHeight(PARKING_HEIGHT);
+    parkingEntity.setPos({2.0f, 2.0f});  // position is fixed temporarily
+
+    Entity wheelFL(&quad, &rectShader), wheelFR(&quad, &rectShader), wheelRL(&quad, &rectShader), wheelRR(&quad, &rectShader);
+
+    const float wheelWidth = vehicleParams.wheel.width;
+    const float wheelLength = vehicleParams.wheel.length;
+    for (Entity* wheel : {&wheelFL, &wheelFR, &wheelRL, &wheelRR}) {
+        wheel->setColor({0.4f, 0.4f, 0.4f, 1.0f});
+        wheel->setWidth(wheelWidth);
+        wheel->setHeight(wheelLength);
+    }
+    auto placeWheel = [&](Entity& wheel, float ax, float ay, bool front) {
+        const float yaw = carEntity.getYaw();
+        const float c = cosf(yaw), s = sinf(yaw);
+
+        // car-local anchor to world position
+        const float wx = carEntity.getPosX() + (c*ax - s*ay);
+        const float wy = carEntity.getPosY() + (s*ax + c*ay);
+
+        wheel.setPos({wx, wy});
+
+        // Later for front wheels adding steering angle is possible
+        wheel.setYaw(yaw);
     };
 
     // render loop
@@ -196,73 +217,33 @@ int main()
         // fixed-step simulation
         while (accumulator >= simDt) {
             step(prevState, curState, simDt, ix, iy);
-            keepCarOnScreenMeters(curState, fbW, fbH, PPM);
+            keepOnScreenMeters(curState, carEntity.getWidth(), carEntity.getHeight(),fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
-        State drawS = interp(prevState, curState, alpha);
-        
-        // car
-        // State s_ndc = rectScaleNDC(CAR_WIDTH, CAR_HEIGHT, fbW, fbH, PPM);
-        // State ndc = metersToNDC(drawS.x, drawS.y, fbW, fbH, PPM);
-        carEntity.setScale(rectScaleNDC(CAR_WIDTH, CAR_HEIGHT, fbW, fbH, PPM));
-        carEntity.setPos(metersToNDC(drawS.x, drawS.y, fbW, fbH, PPM));
-
-        // parking
-        State parkingS_ndc = rectScaleNDC(PARKING_WIDTH, PARKING_HEIGHT, fbW, fbH, PPM);
+        // State drawS = interp(prevState, curState, alpha);
+        carEntity.setPos(interp(prevState, curState, alpha));
 
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw a parking lot
-        rectShader.use();
-        rectShader.setOffset(0.2f, 0.2f);
-        rectShader.setYaw(0.0);  // temoprary set 0
-        rectShader.setScale(parkingS_ndc.x, parkingS_ndc.y);
-        rectShader.setColor(1.0f, 0.8f, 0.2f, 1.0f);
-        glBindVertexArray(quad.getVAO());
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // draw entities
+        renderer.draw(parkingEntity);
+        renderer.draw(carEntity);
+
+        placeWheel(wheelFL, anchors[0][0], anchors[0][1], true);
+        placeWheel(wheelFR, anchors[1][0], anchors[1][1], true);
+        placeWheel(wheelRR, anchors[2][0], anchors[2][1], false);
+        placeWheel(wheelRL, anchors[3][0], anchors[3][1], false);
         
-        // draw a car
-        carEntity.rectShader->use();
-        carEntity.rectShader->setOffset(carEntity.getPosX(), carEntity.getPosY());
-        carEntity.rectShader->setYaw(carEntity.getYaw());  // temoprary set 0
-        carEntity.rectShader->setScale(carEntity.getScaleX(), carEntity.getScaleY());
-        const auto& c = carEntity.getColor();
-        carEntity.rectShader->setColor(c[0], c[1], c[2], c[3]);
-        glBindVertexArray(quad.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        // wheels
-        rectShader.use();
-        for (int i=0; i<4; i++) {
-
-            // get an anchor for each wheel
-            const float ax = anchors[i][0];
-            const float ay = anchors[i][1];
-
-            // calculate rotation
-            const float c = cosf(yaw), s = sinf(yaw);
-            const float wx_m = drawS.x + (c*ax - s*ay);
-            const float wy_m = drawS.y + (s*ax + c*ay);
-
-            // translate meters to NDC for render
-            const State w_ndc  = metersToNDC(wx_m, wy_m, fbW, fbH, PPM);
-            const State ws_ndc = rectScaleNDC(vehicleParams.wheel.width, vehicleParams.wheel.length, fbW, fbH, PPM);
-            
-            rectShader.setOffset(w_ndc.x, w_ndc.y);
-            rectShader.setYaw(yaw);
-            rectShader.setScale(ws_ndc.x, ws_ndc.y);
-            rectShader.setColor(0.4f, 0.4f, 0.4f, 1.0f);
-            glBindVertexArray(quad.getVAO());
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        }
-        
+        renderer.draw(wheelFL);
+        renderer.draw(wheelFR);
+        renderer.draw(wheelRR);
+        renderer.draw(wheelRL);
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
