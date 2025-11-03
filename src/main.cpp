@@ -10,6 +10,7 @@
 #include "Loader.h"
 #include "entities/Entity.h"
 #include "renderers/Renderer.h"
+#include "vehicledynamics/BicycleModel.h"
 
 
 // simulation state
@@ -18,8 +19,7 @@
 const float PPM = 20;  // 1 pixel is 0.05 m (5 cm)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window, float& ix, float& iy);
-void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy);
+void processInput(GLFWwindow *window, Action& action);
 
 // settings
 // window size
@@ -37,9 +37,25 @@ const float PARKING_HEIGHT = 8.0;
 // wheels
 struct WheelSize { float length{0.75}, width{0.35}; };
 struct VehicleParams {
-    float Lf{0.75}, Lr{0.75}, track{2.5};
-    WheelSize wheel{0.75, 0.35};
+    // car body
     float carWid{CAR_WIDTH}, carLen{CAR_HEIGHT};
+
+    // wheel
+    WheelSize wheel{0.75, 0.35};
+
+    // margins
+    float front_margin{0.20f}, rear_margin{0.20f}, side_margin{0.10f};
+
+    // wheel placement
+    float Lf{};     // front wheel
+    float Lr{};     // rear wheel
+    float track{};  // wheel centers
+
+    void finalize() {
+        Lf = (carLen * 0.5f) - (wheel.length * 0.5f + front_margin);
+        Lr = (carLen * 0.5f) - (wheel.length * 0.5f + rear_margin);
+        track = carWid - (wheel.width + 2.0f * side_margin);
+    }
 };
 
 // Clamp accumulator to avoid spiral of death after stalls
@@ -143,14 +159,14 @@ int main()
     double lastTime = glfwGetTime();
 
     // simulation state (previous and current for interpolation)
-    State prevState{0,0}, curState{0,0};
-    float yaw = 0.5f; // about 30 degrees
+    float yaw = 0.0f; // about 30 degrees
 
     // inputs
-    float ix = 0.0f, iy = 0.0f;
+    Action action;
 
     // wheels
     VehicleParams vehicleParams;
+    vehicleParams.finalize();
 
     // wheel anchors in car-local frame
     const std::array<float, 2> anchors[4] = {
@@ -184,6 +200,14 @@ int main()
         wheel->setWidth(wheelWidth);
         wheel->setHeight(wheelLength);
     }
+    
+    // vehicle state
+    VehicleState vehicleState;
+    vehicleState.pos = {carEntity.getPosX(), carEntity.getPosY()};
+    vehicleState.psi = carEntity.getYaw();
+    vehicleState.velocity = 0.0f;
+    vehicleState.delta = 0.0f;
+
     auto placeWheel = [&](Entity& wheel, float ax, float ay, bool front) {
         const float yaw = carEntity.getYaw();
         const float c = cosf(yaw), s = sinf(yaw);
@@ -195,8 +219,18 @@ int main()
         wheel.setPos({wx, wy});
 
         // Later for front wheels adding steering angle is possible
-        wheel.setYaw(yaw);
+        if (front) {
+            wheel.setYaw(carEntity.getYaw() + vehicleState.delta);
+        } else {
+            wheel.setYaw(yaw);
+        }
     };
+
+    State prevState = vehicleState.pos;
+    State curState = vehicleState.pos;
+
+    // kinematic model
+    BicycleModel bikeModel(vehicleParams.carLen);
 
     // render loop
     // -----------
@@ -210,14 +244,16 @@ int main()
 
         // input
         // -----
-        processInput(window, ix, iy);
+        processInput(window, action);
     
         clampAccumulator(accumulator, simDt);
 
         // fixed-step simulation
         while (accumulator >= simDt) {
-            step(prevState, curState, simDt, ix, iy);
-            keepOnScreenMeters(curState, carEntity.getWidth(), carEntity.getHeight(),fbW, fbH, PPM);
+            prevState = vehicleState.pos;
+            bikeModel.kinematicAct(action, vehicleState, static_cast<float>(simDt));
+            curState = vehicleState.pos;
+            keepOnScreenMeters(vehicleState.pos, carEntity.getWidth(), carEntity.getHeight(),fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
@@ -225,6 +261,7 @@ int main()
         float alpha = static_cast<float>(accumulator / simDt);
         // State drawS = interp(prevState, curState, alpha);
         carEntity.setPos(interp(prevState, curState, alpha));
+        carEntity.setYaw(vehicleState.psi);
 
         // render
         // ------
@@ -265,23 +302,23 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window, float& ix, float& iy)
+void processInput(GLFWwindow *window, Action& action)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    // Move a rectangle based on inputs
-    float dx = 0.0f, dy = 0.0f;
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) dx += 1.0;
-    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) dx -= 1.0;
-    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) dy += 1.0;
-    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) dy -= 1.0;
+    // reset action
+    action = {};
 
-    // simple critically-damped-ish smoothing toward target inputs (optional)
-    // makes input changes less jittery between frames
-    const float k = 0.25f; // smoothing factor [0..1], 0=no change, 1=instant
-    ix = ix + k * (dx - ix);
-    iy = iy + k * (dy - iy);
+    // Move a rectangle based on inputs as a discrete action space for simplicity
+    // a continuous action space will be implemented later.
+    const float iSteeringAngle = 0.5;  // about 30 degrees
+    const float iAcceleration = 1.0f;    // 1 m/s
+
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = iSteeringAngle; } 
+    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = -iSteeringAngle; }
+    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) { action.acceleration = iAcceleration, action.steeringAngle = 0.0f; }
+    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) { action.acceleration = -iAcceleration, action.steeringAngle = 0.0f; }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -292,20 +329,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-
-// simulation step
-// ---------------------------------------------------------------------------------------------------------
-void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy) {
-    // simple kinematic “speed” in NDC units per second
-    const float SPEED_MS = 1.0f;  // 1 m/s
-
-    // shift previous → current for interpolation
-    prevState = curState;
-
-    // apply input as velocity command
-    curState.x += (ix * SPEED_MS) * static_cast<float>(simDt);
-    curState.y += (iy * SPEED_MS) * static_cast<float>(simDt);
-};
 
 
 /*
