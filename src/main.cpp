@@ -16,7 +16,7 @@
 // simulation state
 // simulation state stays as meters
 
-const float PPM = 20;  // 1 pixel is 0.05 m (5 cm)
+const float PPM = 20.f;  // 1 pixel is 0.05 m (5 cm)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window, Action& action);
@@ -27,21 +27,21 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // rectangle as a car size in meters
-const float CAR_WIDTH = 2.0;
-const float CAR_HEIGHT = 4.0;
+const float CAR_WIDTH = 2.0f;
+const float CAR_HEIGHT = 4.0f;
 
 // rectangle as a parking lot size in meters
-const float PARKING_WIDTH = 4.0;
-const float PARKING_HEIGHT = 8.0;
+const float PARKING_WIDTH = 4.0f;
+const float PARKING_HEIGHT = 8.0f;
 
 // wheels
-struct WheelSize { float length{0.75}, width{0.35}; };
+struct WheelSize { float length{0.75f}, width{0.35f}; };
 struct VehicleParams {
     // car body
     float carWid{CAR_WIDTH}, carLen{CAR_HEIGHT};
 
     // wheel
-    WheelSize wheel{0.75, 0.35};
+    WheelSize wheel{0.75f, 0.35f};
 
     // margins
     float front_margin{0.20f}, rear_margin{0.20f}, side_margin{0.10f};
@@ -85,6 +85,12 @@ inline void keepOnScreenMeters(State& s, float width_m, float height_m, int fbW,
     s.x = std::clamp(s.x, -worldHalfW + marginX, worldHalfW - marginX);
     s.y = std::clamp(s.y, -worldHalfH + marginY, worldHalfH - marginY);
 };
+
+// angle helpers
+// PI is defined in BicycleModel.h
+inline float wrapPi(float a){ while(a<=-PI)a+=2*PI; while(a>PI)a-=2*PI; return a; }
+inline float lerpAngle(float a,float b,float t){ float d=wrapPi(b-a); return wrapPi(a + d*t); }
+
 
 
 int main()
@@ -158,15 +164,23 @@ int main()
     double accumulator = 0.0;
     double lastTime = glfwGetTime();
 
-    // simulation state (previous and current for interpolation)
-    float yaw = 0.0f; // about 30 degrees
-
-    // inputs
-    Action action;
-
     // wheels
     VehicleParams vehicleParams;
     vehicleParams.finalize();
+
+    // vehicle state
+    VehicleState vehicleState;
+
+    // previous and current state for interpolation
+    State prevState = vehicleState.pos, curState = vehicleState.pos;
+    float prevPsi = vehicleState.psi, curPsi = vehicleState.psi;
+    float prevDelta = vehicleState.delta, curDelta = vehicleState.delta;
+
+    // kinematic model
+    BicycleModel bikeModel(vehicleParams.Lf + vehicleParams.Lr);
+
+    // inputs
+    Action action;
 
     // wheel anchors in car-local frame
     const std::array<float, 2> anchors[4] = {
@@ -180,9 +194,9 @@ int main()
     // entities
     Entity carEntity(&quad, &rectShader);
     carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
-    carEntity.setYaw(yaw);
-    carEntity.setWidth(CAR_WIDTH);
-    carEntity.setHeight(CAR_HEIGHT);
+    carEntity.setYaw(vehicleState.psi);
+    carEntity.setWidth(CAR_HEIGHT);
+    carEntity.setHeight(CAR_WIDTH);
 
     Entity parkingEntity(&quad, &rectShader);
     parkingEntity.setColor({1.0f, 0.8f, 0.2f, 1.0f});
@@ -197,40 +211,28 @@ int main()
     const float wheelLength = vehicleParams.wheel.length;
     for (Entity* wheel : {&wheelFL, &wheelFR, &wheelRL, &wheelRR}) {
         wheel->setColor({0.4f, 0.4f, 0.4f, 1.0f});
-        wheel->setWidth(wheelWidth);
-        wheel->setHeight(wheelLength);
+        wheel->setWidth(wheelLength);
+        wheel->setHeight(wheelWidth);
     }
     
-    // vehicle state
-    VehicleState vehicleState;
-    vehicleState.pos = {carEntity.getPosX(), carEntity.getPosY()};
-    vehicleState.psi = carEntity.getYaw();
-    vehicleState.velocity = 0.0f;
-    vehicleState.delta = 0.0f;
 
-    auto placeWheel = [&](Entity& wheel, float ax, float ay, bool front) {
-        const float yaw = carEntity.getYaw();
-        const float c = cosf(yaw), s = sinf(yaw);
+    auto placeWheel = [&](Entity& wheel, float ax, float ay, bool front, 
+                          const State& pos, const float& yawDraw, const float& steer) {
+        
+        const float c = cosf(yawDraw), s = sinf(yawDraw);
 
         // car-local anchor to world position
-        const float wx = carEntity.getPosX() + (c*ax - s*ay);
-        const float wy = carEntity.getPosY() + (s*ax + c*ay);
+        const float wx = pos.x + (c*ax - s*ay);
+        const float wy = pos.y + (s*ax + c*ay);
 
         wheel.setPos({wx, wy});
 
-        // Later for front wheels adding steering angle is possible
         if (front) {
-            wheel.setYaw(carEntity.getYaw() + vehicleState.delta);
+            wheel.setYaw(yawDraw + steer);
         } else {
-            wheel.setYaw(yaw);
+            wheel.setYaw(yawDraw);
         }
     };
-
-    State prevState = vehicleState.pos;
-    State curState = vehicleState.pos;
-
-    // kinematic model
-    BicycleModel bikeModel(vehicleParams.carLen);
 
     // render loop
     // -----------
@@ -250,18 +252,32 @@ int main()
 
         // fixed-step simulation
         while (accumulator >= simDt) {
+            // set the privious state
             prevState = vehicleState.pos;
+            prevPsi = vehicleState.psi;
+            prevDelta = vehicleState.delta;
+            
+            // update state
             bikeModel.kinematicAct(action, vehicleState, static_cast<float>(simDt));
+            
+            // set the current state
             curState = vehicleState.pos;
+            curPsi = vehicleState.psi;
+            curDelta  = vehicleState.delta;
+
             keepOnScreenMeters(vehicleState.pos, carEntity.getWidth(), carEntity.getHeight(),fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
-        // State drawS = interp(prevState, curState, alpha);
-        carEntity.setPos(interp(prevState, curState, alpha));
-        carEntity.setYaw(vehicleState.psi);
+        const State posDraw = interp(prevState, curState, alpha);
+        const float yawDraw = lerpAngle(prevPsi, curPsi, alpha);
+        const float deltaDraw = prevDelta + (curDelta - prevDelta) * alpha;
+
+        // set pos and yaw to draw the car
+        carEntity.setPos(posDraw);
+        carEntity.setYaw(yawDraw);
 
         // render
         // ------
@@ -272,10 +288,10 @@ int main()
         renderer.draw(parkingEntity);
         renderer.draw(carEntity);
 
-        placeWheel(wheelFL, anchors[0][0], anchors[0][1], true);
-        placeWheel(wheelFR, anchors[1][0], anchors[1][1], true);
-        placeWheel(wheelRR, anchors[2][0], anchors[2][1], false);
-        placeWheel(wheelRL, anchors[3][0], anchors[3][1], false);
+        placeWheel(wheelFL, anchors[0][0], anchors[0][1], true, posDraw, yawDraw, deltaDraw);
+        placeWheel(wheelFR, anchors[1][0], anchors[1][1], true, posDraw, yawDraw, deltaDraw);
+        placeWheel(wheelRR, anchors[2][0], anchors[2][1], false, posDraw, yawDraw, 0.0f);
+        placeWheel(wheelRL, anchors[3][0], anchors[3][1], false, posDraw, yawDraw, 0.0f);
         
         renderer.draw(wheelFL);
         renderer.draw(wheelFR);
@@ -312,11 +328,11 @@ void processInput(GLFWwindow *window, Action& action)
 
     // Move a rectangle based on inputs as a discrete action space for simplicity
     // a continuous action space will be implemented later.
-    const float iSteeringAngle = 0.5;  // about 30 degrees
+    const float iSteeringAngle = PI * 0.166f;  // about 30 degrees
     const float iAcceleration = 1.0f;    // 1 m/s
 
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = iSteeringAngle; } 
-    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = -iSteeringAngle; }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = -iSteeringAngle; } 
+    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = +iSteeringAngle; }
     if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) { action.acceleration = iAcceleration, action.steeringAngle = 0.0f; }
     if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) { action.acceleration = -iAcceleration, action.steeringAngle = 0.0f; }
 }

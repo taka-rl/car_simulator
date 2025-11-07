@@ -11,9 +11,14 @@ void main() {
    float c = cos(uYaw);
    float s = sin(uYaw);
 
-   // Rotation equation
-   mat2 R = mat2(c, -s,
-                  s, c);
+   // Rotation
+   /*
+   Rotation equation: mat2(c, -s, s, c)
+   Due to fixing the shader to CCW (Counter Clockwise), 
+   mat2(c, s, -s, c) is used.
+   */
+   mat2 R = mat2(c, s,
+                  -s, c);
    p = R * p;
 
    // 3: Translate to final position

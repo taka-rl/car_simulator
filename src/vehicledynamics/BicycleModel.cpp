@@ -4,6 +4,19 @@
 #include "BicycleModel.h"
 
 
+// constants
+const float PI = std::acos(-1.0f);
+
+
+// helper: normalize angle to (-pi, pi]
+// ------------------------------------------------------------------------
+static inline float normalizeAngleRad(float a) {
+    const float TWO_PI = 2.0f * PI;
+    a = std::fmod(a + PI, TWO_PI);
+    if (a < 0.0f) a += TWO_PI;
+    return a - PI;
+}
+
 // constructor
 // ------------------------------------------------------------------------
 BicycleModel::BicycleModel(float length): length(length) {};
@@ -37,9 +50,19 @@ void BicycleModel::kinematicAct(Action& action, VehicleState& vehicleState, floa
     vehicleState.pos.y += dt * y_dot;
     vehicleState.psi += dt * psi_dot;
 
+    // normalize heading to a canonical range to avoid unbounded growth
+    vehicleState.psi = normalizeAngleRad(vehicleState.psi);
+
     // update state
     // updateState(vehicleState, x_dot, y_dot, v_dot, psi_dot, dt);
-    std::cout << "Kinematic Act: x: "<< vehicleState.pos.x << " y: " << vehicleState.pos.y << " psi:" << vehicleState.psi << " v: " << vehicleState.velocity << std::endl;
+
+    // debug code
+    // std::cout << "Kinematic Act: x: " << vehicleState.pos.x 
+    // << " y: " << vehicleState.pos.y 
+    // << " psi:" << vehicleState.psi 
+    // << " degrees: " << vehicleState.psi * (180/PI)
+    // << " psi + headingangle degree: " << (vehicleState.psi + vehicleState.delta) * (180/PI)
+    // << " v: " << vehicleState.velocity << std::endl;
 }
 
 void BicycleModel::dynamicAct(Action action) {

@@ -4,12 +4,14 @@
 
 #include "../entities/Entity.h"
 
+extern const float PI;
+
 
 struct BicycleModelLimits {
-    float delta_max{0.785f};         // PI/4 = 45 degrees = 0.785rad
+    float delta_max{PI * 0.25f};     // PI/4 = 45 degrees = 0.785rad
     float delta_rate_max{0.6f};      // rad/s  
-    float a_max{1.0f};               // m/s^2  1.0 m/s^2
-    float v_max{10.0f};              // m/s  - 10 km/h
+    float a_max{1.0f};               // 1.0 m/s^2
+    float v_max{10.0f};              // 10 km/h
 };
 
 struct Action {
