@@ -21,8 +21,12 @@ public:
     // ------------------------------------------------------------------------
     // default destructor is used. 
 
-    // draw
-    // ------------------------------------------------------------------------
+    /** draw
+     * ------------------------------------------------------------------------
+     * @param[in] x_m: x coordinate of the object center
+     * @param[in] y_m: y coordinate of the object center
+     * @return void
+    */
     void draw(const Entity& e) const;
 
 private:

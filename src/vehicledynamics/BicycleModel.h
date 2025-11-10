@@ -11,7 +11,7 @@ struct BicycleModelLimits {
     float delta_max{PI * 0.25f};     // PI/4 = 45 degrees = 0.785rad
     float delta_rate_max{0.6f};      // rad/s  
     float a_max{1.0f};               // 1.0 m/s^2
-    float v_max{10.0f};              // 10 km/h
+    float v_max{2.78f};              // 10 km/h ≈ 2.78 m/s
 };
 
 struct Action {
@@ -49,7 +49,6 @@ public:
      * psi_dot = v * tan(steeringAngle) / Length;
      * @return void 
     */
-    // ----------------------------------------------------------------------------
     void kinematicAct(Action& action, VehicleState& vehicleState, float dt);
 
     // Calculate the car movement using dynamic bicycle model
@@ -64,7 +63,6 @@ public:
      * @param[in] dt: discrete time step
      * @return void
      */
-    // ----------------------------------------------------------------------------
     void updateState(VehicleState& vehicleState, const float& x_dot, const float& y_dot, const float& v_dot, const float& psi_dot, float& dt);
 
 private:

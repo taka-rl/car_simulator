@@ -24,7 +24,7 @@ void Renderer::draw(const Entity& e) const {
     const State ndcSize = rectSizeToNDC(e.getWidth(), e.getHeight());
 
     e.rectShader->setOffset(ndcPos.x, ndcPos.y);
-    e.rectShader->setYaw(e.getYaw());  // temoprary set 0
+    e.rectShader->setYaw(e.getYaw());
     e.rectShader->setScale(ndcSize.x, ndcSize.y);
     const auto& c = e.getColor();
     e.rectShader->setColor(c[0], c[1], c[2], c[3]);
