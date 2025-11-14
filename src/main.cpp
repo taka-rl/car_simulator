@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <random>
 
 #include "shaders/RectShader.h"
 #include "Loader.h"
@@ -12,6 +13,9 @@
 #include "renderers/Renderer.h"
 #include "vehicledynamics/BicycleModel.h"
 
+
+// Global (or file-scope) RNG – constructed once
+static std::mt19937 g_rng{ std::random_device{}() };
 
 // simulation state
 // simulation state stays as meters
@@ -91,7 +95,35 @@ inline void keepOnScreenMeters(State& s, float width_m, float height_m, int fbW,
 inline float wrapPi(float a){ while(a<=-PI)a+=2*PI; while(a>PI)a-=2*PI; return a; }
 inline float lerpAngle(float a,float b,float t){ float d=wrapPi(b-a); return wrapPi(a + d*t); }
 
+// return a random float number in [minVal, maxVal)
+// ------------------------------------------------------------------------
+inline float randFloat(const float& minVal, const float& maxVal) {
+    std::uniform_real_distribution<float> dist(minVal, maxVal);
+    return dist(g_rng);
+}
 
+// return int in [minVal, maxVal)
+// ------------------------------------------------------------------------
+inline int randInt(const float& minVal, const float& maxVal) {
+    std::uniform_int_distribution<int> dist(minVal, maxVal);
+    return dist(g_rng);
+}
+
+// set the parking lot location randomly
+// ------------------------------------------------------------------------
+inline State setParkingPos(const float minX, const float maxX, const float minY, const float maxY) {
+    float x = randFloat(minX, maxX);
+    float y = randFloat(minY, maxY);
+    return {x, y};
+};
+
+// return yaw either 0 or 90 degree
+// ------------------------------------------------------------------------
+inline float setParkingYaw() {
+    const int k = randInt(0, 1);  // Currently yaw degree shall be 0 or 90 degree
+    float yawDeg = (k == 0) ? 0.0f : 90.0f;
+    return yawDeg * PI / 180.0f;
+}
 
 int main()
 {
@@ -200,10 +232,10 @@ int main()
 
     Entity parkingEntity(&quad, &rectShader);
     parkingEntity.setColor({1.0f, 0.8f, 0.2f, 1.0f});
-    parkingEntity.setYaw(0.0f);
+    parkingEntity.setYaw(setParkingYaw());
     parkingEntity.setWidth(PARKING_WIDTH);
     parkingEntity.setHeight(PARKING_HEIGHT);
-    parkingEntity.setPos({2.0f, 2.0f});  // position is fixed temporarily
+    parkingEntity.setPos(setParkingPos(-15.f, 15.f, -10.f, 10.f));
 
     Entity wheelFL(&quad, &rectShader), wheelFR(&quad, &rectShader), wheelRL(&quad, &rectShader), wheelRR(&quad, &rectShader);
 
