@@ -35,8 +35,8 @@ const float CAR_WIDTH = 2.0f;
 const float CAR_HEIGHT = 4.0f;
 
 // rectangle as a parking lot size in meters
-const float PARKING_WIDTH = 4.0f;
-const float PARKING_HEIGHT = 8.0f;
+const float PARKING_WIDTH = 3.5f;
+const float PARKING_HEIGHT = 6.0f;
 
 // wheels
 struct WheelSize { float length{0.75f}, width{0.35f}; };
@@ -123,6 +123,62 @@ inline float setParkingYaw() {
     const int k = randInt(0, 1);  // Currently yaw degree shall be 0 or 90 degree
     float yawDeg = (k == 0) ? 0.0f : 90.0f;
     return yawDeg * PI / 180.0f;
+}
+
+// rotate car poistion into the parking lot frame
+// ------------------------------------------------------------------------
+inline State worldToSlot(const State& carPos, const State& slotPos, float slotYaw) {
+    const float dx = carPos.x - slotPos.x;
+    const float dy = carPos.y - slotPos.y;
+
+    const float c = cosf(slotYaw);
+    const float s = sinf(slotYaw);
+
+    return State{
+        c * dx + s * dy,
+        -s * dx + c * dy
+    };
+}
+
+// Parking success tolerances (in slot frame)
+constexpr float PARK_LONG_TOL = 1.5f;   // ±1.5 m along slot axis on X axis
+constexpr float PARK_LAT_TOL  = 1.f;    // ±1.0 m sideways on Y axis
+constexpr float PARK_YAW_TOL  = 10.0f * (PI / 180.0f); // 10 deg in rad
+
+// check whether the car is parked successfully or not
+// ------------------------------------------------------------------------
+inline bool isParked(const State& carPos, const float carYaw, const State& parkingPos, const float& parkingYaw) {
+
+    // car center in slot frame
+    State rel = worldToSlot(carPos, parkingPos, parkingYaw);
+
+    // heading error in slot frame
+    const float psiRel = wrapPi(carYaw - parkingYaw);
+    
+    // position tolerances (slot frame)
+    const bool posOk = std::fabs(rel.x) <= PARK_LONG_TOL && std::fabs(rel.y) <= PARK_LAT_TOL;
+
+    // yaw tolerance
+    const bool yawOk = std::fabs(psiRel) <= PARK_YAW_TOL;
+
+    // debug
+    std::cout << "Slot frame: rel.x=" << rel.x
+          << " rel.y=" << rel.y
+          << " |psiRel|=" << std::fabs(psiRel)
+          << " |yaw|=" << PARK_YAW_TOL
+          << " posOk=" << posOk
+          << " yawOk=" << yawOk << "\n";
+
+
+    // temporarily only position is used to check parking success
+    // if (posOk && yawOk) {
+    if (posOk) {
+        std::cout << "PARKED!" << std::endl;
+    } else {
+        std::cout << "Not PARKED!" << std::endl;
+    }
+    
+    return posOk; //&& yawOk; 
 }
 
 int main()
@@ -344,6 +400,9 @@ int main()
         trajectoryEntities.push_back(seg);
 
         };
+
+        // check parking success
+        bool parkingSuccess = isParked({carEntity.getPosX(), carEntity.getPosY()}, carEntity.getYaw(), {parkingEntity.getPosX(), parkingEntity.getPosY()}, parkingEntity.getYaw());
 
         // render
         // ------
