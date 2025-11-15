@@ -231,7 +231,7 @@ int main()
     carEntity.setHeight(CAR_WIDTH);
 
     Entity parkingEntity(&quad, &rectShader);
-    parkingEntity.setColor({1.0f, 0.8f, 0.2f, 1.0f});
+    parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
     parkingEntity.setYaw(setParkingYaw());
     parkingEntity.setWidth(PARKING_WIDTH);
     parkingEntity.setHeight(PARKING_HEIGHT);
@@ -265,6 +265,11 @@ int main()
             wheel.setYaw(yawDraw);
         }
     };
+
+    // trajectory line
+    std::vector<Entity> trajectoryEntities;
+    trajectoryEntities.clear();
+    trajectoryEntities.reserve(2000);
 
     // render loop
     // -----------
@@ -311,6 +316,35 @@ int main()
         carEntity.setPos(posDraw);
         carEntity.setYaw(yawDraw);
 
+        // trajectory
+        // calculate the distance between two points
+        float dx = curState.x - prevState.x;
+        float dy = curState.y - prevState.y;
+        float len = std::sqrt(dx*dx + dy*dy);
+        
+        // ignore small movement
+        const float minSegLen = 0.01f;   // 1 cm
+        if (len > minSegLen) {
+            // center of the segment
+            State center{
+                0.5f * (prevState.x + curState.x),
+                0.5f * (prevState.y + curState.y)
+            };
+
+        // yaw of the segment
+        float segYaw = std::atan2(dy, dx);
+
+        Entity seg(&quad, &rectShader);
+        seg.setPos(center);
+        seg.setWidth(0.05f);
+        seg.setHeight(len);
+        seg.setYaw(segYaw);
+        seg.setColor({0.9f, 0.9f, 0.2f, 1.0f});
+
+        trajectoryEntities.push_back(seg);
+
+        };
+
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -329,6 +363,11 @@ int main()
         renderer.draw(wheelFR);
         renderer.draw(wheelRR);
         renderer.draw(wheelRL);
+
+        // draw trajectory
+        for (auto& seg : trajectoryEntities) {
+            renderer.draw(seg);
+        }
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
