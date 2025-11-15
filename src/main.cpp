@@ -97,21 +97,21 @@ inline float lerpAngle(float a,float b,float t){ float d=wrapPi(b-a); return wra
 
 // return a random float number in [minVal, maxVal)
 // ------------------------------------------------------------------------
-inline float randFloat(const float& minVal, const float& maxVal) {
+inline float randFloat(float minVal, float maxVal) {
     std::uniform_real_distribution<float> dist(minVal, maxVal);
     return dist(g_rng);
 }
 
 // return int in [minVal, maxVal)
 // ------------------------------------------------------------------------
-inline int randInt(const float& minVal, const float& maxVal) {
+inline int randInt(int minVal, int maxVal) {
     std::uniform_int_distribution<int> dist(minVal, maxVal);
     return dist(g_rng);
 }
 
 // set the parking lot location randomly
 // ------------------------------------------------------------------------
-inline State setParkingPos(const float minX, const float maxX, const float minY, const float maxY) {
+inline State setParkingPos(float minX, float maxX, float minY, float maxY) {
     float x = randFloat(minX, maxX);
     float y = randFloat(minY, maxY);
     return {x, y};
