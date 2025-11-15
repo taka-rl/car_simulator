@@ -2,9 +2,15 @@
 #define BICYCLEMODEL_H
 
 
+#include <cmath>
+#include <algorithm>
+#include <iostream>
+
+
 #include "../entities/Entity.h"
 
-extern const float PI;
+
+inline constexpr float PI = 3.14159265358979323846f;
 
 
 struct BicycleModelLimits {

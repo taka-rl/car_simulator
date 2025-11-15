@@ -1,11 +1,4 @@
-#include <cmath>
-#include <algorithm>
-#include <iostream>
 #include "BicycleModel.h"
-
-
-// constants
-const float PI = std::acos(-1.0f);
 
 
 // helper: normalize angle to (-pi, pi]
