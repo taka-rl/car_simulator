@@ -58,6 +58,7 @@ public:
     unsigned int getVAO() const;
     unsigned int getEBO() const;
 
+private:
     // create VBO, VAO, EBO
     // ------------------------------------------------------------------------
     unsigned int makeVBO();

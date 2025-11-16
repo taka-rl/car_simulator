@@ -3,34 +3,64 @@
 
 #include <iostream>
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <random>
 
-#include "shaders/CarShader.h"
-#include "shaders/ParkingShader.h"
+#include "shaders/RectShader.h"
 #include "Loader.h"
+#include "entities/Entity.h"
+#include "renderers/Renderer.h"
+#include "vehicledynamics/BicycleModel.h"
 
+
+// Global (or file-scope) RNG – constructed once
+static std::mt19937 g_rng{ std::random_device{}() };
 
 // simulation state
-struct State { float x, y; };
-const float PIXEL_TO_METER_SCALE = 0.05;
+// simulation state stays as meters
+
+const float PPM = 20.f;  // 1 pixel is 0.05 m (5 cm)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window, float& ix, float& iy);
-void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy);
-void keepQuadNDC(State& prevState, State& curState) ;
-
+void processInput(GLFWwindow *window, Action& action);
 
 // settings
 // window size
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// rectangle as a car size
-const float CAR_WIDTH = 2.0 * PIXEL_TO_METER_SCALE;
-const float CAR_HEIGHT = 4.0 * PIXEL_TO_METER_SCALE;
+// rectangle as a car size in meters
+const float CAR_WIDTH = 2.0f;
+const float CAR_HEIGHT = 4.0f;
 
-const float PARKING_WIDTH = 4.0 * PIXEL_TO_METER_SCALE;
-const float PARKING_HEIGHT = 8.0 * PIXEL_TO_METER_SCALE;
+// rectangle as a parking lot size in meters
+const float PARKING_WIDTH = 3.5f;
+const float PARKING_HEIGHT = 6.0f;
 
+// wheels
+struct WheelSize { float length{0.75f}, width{0.35f}; };
+struct VehicleParams {
+    // car body
+    float carWid{CAR_WIDTH}, carLen{CAR_HEIGHT};
+
+    // wheel
+    WheelSize wheel{0.75f, 0.35f};
+
+    // margins
+    float front_margin{0.20f}, rear_margin{0.20f}, side_margin{0.10f};
+
+    // wheel placement
+    float Lf{};     // front wheel
+    float Lr{};     // rear wheel
+    float track{};  // wheel centers
+
+    void finalize() {
+        Lf = (carLen * 0.5f) - (wheel.length * 0.5f + front_margin);
+        Lr = (carLen * 0.5f) - (wheel.length * 0.5f + rear_margin);
+        track = carWid - (wheel.width + 2.0f * side_margin);
+    }
+};
 
 // Clamp accumulator to avoid spiral of death after stalls
 inline void clampAccumulator(double& accum, const double simDt, double maxSteps = 5.0) {
@@ -47,6 +77,248 @@ inline State interp(const State& prev, const State& curr, float alpha) {
         lerp(prev.x, curr.x, alpha),
         lerp(prev.y, curr.y, alpha)
     };
+}
+
+// keep the entire rectangle visible on screen.
+// ------------------------------------------------------------------------
+inline void keepOnScreenMeters(State& s, float width_m, float height_m, int fbW, int fbH, float ppm) {
+    const float worldHalfW = (fbW / ppm) * 0.5f;
+    const float worldHalfH = (fbH / ppm) * 0.5f;
+    const float marginX = width_m * 0.5f;
+    const float marginY = height_m * 0.5f;
+    s.x = std::clamp(s.x, -worldHalfW + marginX, worldHalfW - marginX);
+    s.y = std::clamp(s.y, -worldHalfH + marginY, worldHalfH - marginY);
+};
+
+// angle helpers
+// PI is defined in BicycleModel.h
+inline float wrapPi(float a){ while(a<=-PI)a+=2*PI; while(a>PI)a-=2*PI; return a; }
+inline float lerpAngle(float a,float b,float t){ float d=wrapPi(b-a); return wrapPi(a + d*t); }
+
+// return a random float number in [minVal, maxVal)
+// ------------------------------------------------------------------------
+inline float randFloat(float minVal, float maxVal) {
+    std::uniform_real_distribution<float> dist(minVal, maxVal);
+    return dist(g_rng);
+}
+
+// return int in [minVal, maxVal)
+// ------------------------------------------------------------------------
+inline int randInt(int minVal, int maxVal) {
+    std::uniform_int_distribution<int> dist(minVal, maxVal);
+    return dist(g_rng);
+}
+
+// set the parking lot location randomly
+// ------------------------------------------------------------------------
+inline State setParkingPos(float minX, float maxX, float minY, float maxY) {
+    float x = randFloat(minX, maxX);
+    float y = randFloat(minY, maxY);
+    return {x, y};
+};
+
+// return yaw either 0 or 90 degree
+// ------------------------------------------------------------------------
+inline float setParkingYaw() {
+    const int k = randInt(0, 1);  // Currently yaw degree shall be 0 or 90 degree
+    float yawDeg = (k == 0) ? 0.0f : 90.0f;
+    return yawDeg * PI / 180.0f;
+}
+
+// rotate car poistion into the parking lot frame
+// ------------------------------------------------------------------------
+inline State worldToSlot(const State& carPos, const State& slotPos, float slotYaw) {
+    const float dx = carPos.x - slotPos.x;
+    const float dy = carPos.y - slotPos.y;
+
+    const float c = cosf(slotYaw);
+    const float s = sinf(slotYaw);
+
+    return State{
+        c * dx + s * dy,
+        -s * dx + c * dy
+    };
+}
+
+// Parking success tolerances (in slot frame)
+constexpr float PARK_LONG_TOL = 1.5f;   // ±1.5 m along slot axis on X axis
+constexpr float PARK_LAT_TOL  = 1.f;    // ±1.0 m sideways on Y axis
+constexpr float PARK_YAW_TOL  = 10.0f * (PI / 180.0f); // 10 deg in rad
+
+/**
+ * @brief Check if the car is roughly centered and aligned in the parking slot (slot-frame check).
+ *
+ * This is a *soft* parking check used mainly for shaping rewards.
+ * It works entirely in the parking slot frame:
+ *
+ *  1. Transform the car center from world frame into the parking slot frame
+ *     using worldToSlot(carPos, parkingPos, parkingYaw).
+ *  2. Compute the relative heading error psiRel = wrapPi(carYaw - parkingYaw).
+ *  3. Apply simple tolerances on position and yaw:
+ *       - |rel.x| <= PARK_LONG_TOL   (along slot axis / length direction)
+ *       - |rel.y| <= PARK_LAT_TOL    (sideways within the slot)
+ *       - |psiRel| <= PARK_YAW_TOL   (heading aligned with slot)
+ *
+ * Currently the function only enforces the position tolerance (posOk) and
+ * ignores yawOk in the returned result, but yawOk is computed and logged and
+ * can be enabled later (for example, for RL reward shaping).
+ *
+ * @param carPos      Car center position in world frame [meters].
+ * @param carYaw      Car heading in world frame [radians, CCW+, x-forward].
+ * @param parkingPos  Parking slot center in world frame [meters].
+ * @param parkingYaw  Parking slot orientation in world frame [radians].
+ *
+ * @return true if the car center lies within the configured longitudinal and
+ *         lateral tolerances of the parking slot center (posOk).
+ *         false otherwise.
+ */
+inline bool isParkedAtCenter(const State& carPos, const float carYaw, const State& parkingPos, const float& parkingYaw) {
+
+    // car center in slot frame
+    State rel = worldToSlot(carPos, parkingPos, parkingYaw);
+
+    // heading error in slot frame
+    const float psiRel = wrapPi(carYaw - parkingYaw);
+    
+    // position tolerances (slot frame)
+    const bool posOk = std::fabs(rel.x) <= PARK_LONG_TOL && std::fabs(rel.y) <= PARK_LAT_TOL;
+
+    // yaw tolerance
+    const bool yawOk = std::fabs(psiRel) <= PARK_YAW_TOL;
+
+    // debug
+    // std::cout << "Slot frame: rel.x=" << rel.x
+    // << " rel.y=" << rel.y
+    // << " |psiRel|=" << std::fabs(psiRel)
+    // << " |yaw|=" << PARK_YAW_TOL
+    // << " posOk=" << posOk
+    // << " yawOk=" << yawOk << "\n";
+
+    // temporarily only position is used to check parking success
+    // if (posOk && yawOk) {
+    if (posOk) {
+        std::cout << "Car is at the center of the parking lot!" << std::endl;
+    } else {
+        std::cout << "Not at the center of the parking lot" << std::endl;
+    }
+    
+    return posOk; //&& yawOk; 
+}
+
+/**
+ * @brief Strict geometric parking check: full rotated car rectangle must lie inside the rotated parking lot rectangle.
+ * 
+ * This function performs an exact 2D rectangle-in-rectangle test in the parking lot frame.
+ * 
+  1. Interpret CAR_HEIGHT as car length (along car local x: forward)
+ *     and CAR_WIDTH as car width (along car local y: left). The parking slot
+ *     uses PARKING_HEIGHT as slot length and PARKING_WIDTH as slot width.
+ *
+ *  2. Define the parking-slot frame:
+ *       - Origin at parkingPos
+ *       - X-axis along parkingYaw (slot length direction)
+ *       - Y-axis to the left of X (slot width direction)
+ *
+ *  3. Transform the car center from world frame into the slot frame:
+ *       rel = worldToSlot(carPos, parkingPos, parkingYaw)
+ *
+ *  4. Compute the car orientation relative to the slot:
+ *       psiRel = wrapPi(carYaw - parkingYaw)
+ *       (cRel, sRel) = (cos(psiRel), sin(psiRel))
+ *
+ *  5. Construct the four car corners in car-local frame:
+ *       (±halfCarLen, ±halfCarWid)
+ *     and transform each corner into slot frame via:
+ *
+ *       [x']   [  cRel  -sRel ] [local.x] + rel.x
+ *       [y'] = [  sRel   cRel ] [local.y] + rel.y
+ *
+ *  6. For each transformed corner (x', y'), check that it lies within the
+ *     slot half-extent:
+ *
+ *       |x'| <= halfSlotLen  &&  |y'| <= halfSlotWid
+ *
+ *     If any corner violates this, the car overlaps the slot boundary and
+ *     the function returns false.
+ *
+ * Because both car and slot are handled in arbitrary orientations, this
+ * works for 0°, 90°, 180°, 270° slots and any car heading in [-π, π].
+ *
+ * @param carPos      Car center position in world frame [meters].
+ * @param carYaw      Car heading in world frame [radians, CCW+, x-forward].
+ * @param parkingPos  Parking slot center in world frame [meters].
+ * @param parkingYaw  Parking slot orientation in world frame [radians].
+ *
+ * @return true if all four car corners are inside the parking slot rectangle
+ *         in the slot frame; false otherwise.
+ */
+inline bool isParked(const State& carPos, float carYaw, const State& parkingPos, float parkingYaw) {
+
+    // This code will be used for RL
+    // return false if the car is not at the center of the parking lot
+    // if (!(isParkedAtCenter(carPos, carYaw, parkingPos, parkingYaw))) {
+    //     return false;
+    // }
+    
+    // calculate half sizes (meters)
+    const float halfCarLen = CAR_HEIGHT * 0.5f;       // along car local x (forward)
+    const float halfCarWid = CAR_WIDTH  * 0.5f;       // along car local y (left)
+    const float halfSlotLen = PARKING_HEIGHT * 0.5f;  // along slot local X
+    const float halfSlotWid = PARKING_WIDTH  * 0.5f;  // along slot local Y
+
+    // Car center in slot frame
+    // Define slot frame: origin at parkingPos, X along parkingYaw, Y left of X
+    const float dx = carPos.x - parkingPos.x;
+    const float dy = carPos.y - parkingPos.y;
+
+    const float cSlot = std::cos(parkingYaw);
+    const float sSlot = std::sin(parkingYaw);
+
+    // Rotate world -> slot frame
+    // [ X_slot ]   [  cos  sin ] [ dx ]
+    // [ Y_slot ] = [ -sin  cos ] [ dy ]
+    State rel;
+    rel.x =  cSlot * dx + sSlot * dy;  // along slot length
+    rel.y = -sSlot * dx + cSlot * dy;  // along slot width
+
+    // Car orientation relative to slot
+    const float psiRel = wrapPi(carYaw - parkingYaw);
+    const float cRel   = std::cos(psiRel);
+    const float sRel   = std::sin(psiRel);
+
+    // Car corners in *car* local frame (x forward, y left)
+    // Four corners: (±halfLen, ±halfWid)
+    std::array<State, 4> carLocalCorners = {{
+        { +halfCarLen, +halfCarWid },
+        { +halfCarLen, -halfCarWid },
+        { -halfCarLen, -halfCarWid },
+        { -halfCarLen, +halfCarWid }
+    }};
+
+    // Transform each car corner into slot frame and test
+    for (const auto& local : carLocalCorners) {
+        // Rotate corner from car frame -> slot frame
+        // [x']   [  cRel  -sRel ] [local.x]
+        // [y'] = [  sRel   cRel ] [local.y]
+        const float cx = local.x;
+        const float cy = local.y;
+
+        const float vx = rel.x + (cRel * cx - sRel * cy);
+        const float vy = rel.y + (sRel * cx + cRel * cy);
+
+        const bool insideX = std::fabs(vx) <= halfSlotLen;
+        const bool insideY = std::fabs(vy) <= halfSlotWid;
+
+        if (!insideX || !insideY) {
+            // at least one corner is outside → not parked
+            std::cout << "Not parked" << std::endl;
+            return false;
+        }
+    }
+
+    // all 4 corners are inside the slot box in slot frame → parked
+    std::cout << "Parked" << std::endl;
+    return true;
 }
 
 int main()
@@ -90,25 +362,14 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    CarShader carShader;
-    ParkingShader parkingShader;
+    RectShader rectShader;
 
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float carVertices[] = {
-        CAR_WIDTH / 2,  CAR_HEIGHT / 2, 0.0f,  // top right
-        CAR_WIDTH / 2,  -CAR_HEIGHT / 2, 0.0f,  // bottom right
-        -CAR_WIDTH / 2, -CAR_HEIGHT / 2, 0.0f,  // bottom left
-        -CAR_WIDTH / 2, CAR_HEIGHT / 2, 0.0f   // top left 
-    };
-
-    float parkingVertices[] = {
-        PARKING_WIDTH / 2,  PARKING_HEIGHT / 2, 0.0f,  // top right
-        PARKING_WIDTH / 2,  -PARKING_HEIGHT / 2, 0.0f,  // bottom right
-        -PARKING_WIDTH / 2, -PARKING_HEIGHT / 2, 0.0f,  // bottom left
-        -PARKING_WIDTH / 2, PARKING_HEIGHT / 2, 0.0f   // top left 
-    };
+    float vertices[] = {
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f,  -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f, 0.5f, 0.0f   // top left 
+        };
 
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
@@ -116,9 +377,8 @@ int main()
     };
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
-    Loader carLoader(carVertices, sizeof(carVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
-    Loader parkingLoader(parkingVertices, sizeof(parkingVertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
-
+    Loader quad(vertices, sizeof(vertices)/sizeof(float), indices, sizeof(indices)/sizeof(unsigned int));
+    
     // grab uniform location once
     // carShader.use();
     // parkingShader.use();
@@ -132,11 +392,86 @@ int main()
     double accumulator = 0.0;
     double lastTime = glfwGetTime();
 
-    // simulation state (previous and current for interpolation)
-    State prevState{0,0}, curState{0,0};
+    // wheels
+    VehicleParams vehicleParams;
+    vehicleParams.finalize();
+
+    // vehicle state
+    VehicleState vehicleState;
+
+    // previous and current state for interpolation
+    State prevState = vehicleState.pos, curState = vehicleState.pos;
+    float prevPsi = vehicleState.psi, curPsi = vehicleState.psi;
+    float prevDelta = vehicleState.delta, curDelta = vehicleState.delta;
+
+    // kinematic model
+    BicycleModel bikeModel(vehicleParams.Lf + vehicleParams.Lr);
 
     // inputs
-    float ix = 0.0f, iy = 0.0f;
+    Action action;
+
+    // wheel anchors in car-local frame
+    const std::array<float, 2> anchors[4] = {
+        {+vehicleParams.Lf, +vehicleParams.track*0.5f}, {+vehicleParams.Lf, -vehicleParams.track*0.5f},
+        {-vehicleParams.Lr, -vehicleParams.track*0.5f}, {-vehicleParams.Lr, +vehicleParams.track*0.5f}
+    };
+
+    // renderer
+    Renderer renderer(PPM, fbW, fbH);
+
+    // random positions for car and parking
+    const State randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);
+    const int marginX = randFloat(-5.0, 5.0), marginY = randFloat(-5.0, 5.0);
+    const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
+    
+    // entities
+    Entity carEntity(&quad, &rectShader);
+    carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
+    carEntity.setYaw(vehicleState.psi);
+    carEntity.setWidth(CAR_HEIGHT);
+    carEntity.setHeight(CAR_WIDTH);
+    carEntity.setPos(randCarPos);
+
+    Entity parkingEntity(&quad, &rectShader);
+    parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
+    parkingEntity.setYaw(setParkingYaw());
+    parkingEntity.setWidth(PARKING_HEIGHT);
+    parkingEntity.setHeight(PARKING_WIDTH);
+    parkingEntity.setPos(randParkingPos);
+
+    Entity wheelFL(&quad, &rectShader), wheelFR(&quad, &rectShader), wheelRL(&quad, &rectShader), wheelRR(&quad, &rectShader);
+
+    const float wheelWidth = vehicleParams.wheel.width;
+    const float wheelLength = vehicleParams.wheel.length;
+    for (Entity* wheel : {&wheelFL, &wheelFR, &wheelRL, &wheelRR}) {
+        wheel->setColor({0.4f, 0.4f, 0.4f, 1.0f});
+        wheel->setWidth(wheelLength);
+        wheel->setHeight(wheelWidth);
+    }
+    
+
+    auto placeWheel = [&](Entity& wheel, float ax, float ay, bool front, 
+                          const State& pos, const float& yawDraw, const float& steer) {
+        
+        const float c = cosf(yawDraw), s = sinf(yawDraw);
+
+        // car-local anchor to world position
+        const float wx = pos.x + (c*ax - s*ay);
+        const float wy = pos.y + (s*ax + c*ay);
+
+        wheel.setPos({wx, wy});
+
+        if (front) {
+            wheel.setYaw(yawDraw + steer);
+        } else {
+            wheel.setYaw(yawDraw);
+        }
+    };
+
+    // trajectory line
+    std::vector<Entity> trajectoryEntities;
+    trajectoryEntities.clear();
+    trajectoryEntities.reserve(2000);
 
     // render loop
     // -----------
@@ -150,37 +485,94 @@ int main()
 
         // input
         // -----
-        processInput(window, ix, iy);
+        processInput(window, action);
     
         clampAccumulator(accumulator, simDt);
 
         // fixed-step simulation
         while (accumulator >= simDt) {
-            step(prevState, curState, simDt, ix, iy);
+            // set the privious state
+            prevState = vehicleState.pos;
+            prevPsi = vehicleState.psi;
+            prevDelta = vehicleState.delta;
+            
+            // update state
+            bikeModel.kinematicAct(action, vehicleState, static_cast<float>(simDt));
+            
+            // set the current state
+            curState = vehicleState.pos;
+            curPsi = vehicleState.psi;
+            curDelta  = vehicleState.delta;
+
+            keepOnScreenMeters(vehicleState.pos, carEntity.getWidth(), carEntity.getHeight(),fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
-        State drawS = interp(prevState, curState, alpha);
+        const State posDraw = interp(prevState, curState, alpha);
+        const float yawDraw = lerpAngle(prevPsi, curPsi, alpha);
+        const float deltaDraw = prevDelta + (curDelta - prevDelta) * alpha;
+
+        // set pos and yaw to draw the car
+        carEntity.setPos(posDraw);
+        carEntity.setYaw(yawDraw);
+
+        // trajectory
+        // calculate the distance between two points
+        float dx = curState.x - prevState.x;
+        float dy = curState.y - prevState.y;
+        float len = std::sqrt(dx*dx + dy*dy);
+        
+        // ignore small movement
+        const float minSegLen = 0.01f;   // 1 cm
+        if (len > minSegLen) {
+            // center of the segment
+            State center{
+                0.5f * (prevState.x + curState.x),
+                0.5f * (prevState.y + curState.y)
+            };
+
+        // yaw of the segment
+        float segYaw = std::atan2(dy, dx);
+
+        Entity seg(&quad, &rectShader);
+        seg.setPos(center);
+        seg.setWidth(0.05f);
+        seg.setHeight(len);
+        seg.setYaw(segYaw);
+        seg.setColor({0.9f, 0.9f, 0.2f, 1.0f});
+
+        trajectoryEntities.push_back(seg);
+
+        };
+
+        // check parking success
+        bool parkingSuccess = isParked({carEntity.getPosX(), carEntity.getPosY()}, carEntity.getYaw(), {parkingEntity.getPosX(), parkingEntity.getPosY()}, parkingEntity.getYaw());
 
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw a parking lot
-        parkingShader.use();
-        glUniform2f(parkingShader.getUOffsetLoc(), 0.2f, 0.2f);
-        glBindVertexArray(parkingLoader.getVAO());
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // draw entities
+        renderer.draw(parkingEntity);
+        renderer.draw(carEntity);
+
+        placeWheel(wheelFL, anchors[0][0], anchors[0][1], true, posDraw, yawDraw, deltaDraw);
+        placeWheel(wheelFR, anchors[1][0], anchors[1][1], true, posDraw, yawDraw, deltaDraw);
+        placeWheel(wheelRR, anchors[2][0], anchors[2][1], false, posDraw, yawDraw, 0.0f);
+        placeWheel(wheelRL, anchors[3][0], anchors[3][1], false, posDraw, yawDraw, 0.0f);
         
-        // draw a car
-        carShader.use();
-        glUniform2f(carShader.getUOffsetLoc(), drawS.x, drawS.y);
-        glBindVertexArray(carLoader.getVAO()); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //glDrawArrays(GL_TRIANGLES, 0, 6);
+        renderer.draw(wheelFL);
+        renderer.draw(wheelFR);
+        renderer.draw(wheelRR);
+        renderer.draw(wheelRL);
+
+        // draw trajectory
+        for (auto& seg : trajectoryEntities) {
+            renderer.draw(seg);
+        }
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -202,23 +594,24 @@ int main()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window, float& ix, float& iy)
+void processInput(GLFWwindow *window, Action& action)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    // Move a rectangle based on inputs
-    float dx = 0.0f, dy = 0.0f;
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) dx += 1.0;
-    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) dx -= 1.0;
-    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) dy += 1.0;
-    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) dy -= 1.0;
+    // reset action
+    action = {};
 
-    // simple critically-damped-ish smoothing toward target inputs (optional)
-    // makes input changes less jittery between frames
-    const float k = 0.25f; // smoothing factor [0..1], 0=no change, 1=instant
-    ix = ix + k * (dx - ix);
-    iy = iy + k * (dy - iy);
+    // Move a rectangle based on inputs as a discrete action space for simplicity
+    // a continuous action space will be implemented later.
+    const float iSteeringAngle = PI * 0.166f;  // about 30 degrees
+    const float iAcceleration = 1.0f;    // 1 m/s
+
+    // combined actions (e.g. accelerate + steer) are possible
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) action.steeringAngle = -iSteeringAngle;
+    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) action.steeringAngle = +iSteeringAngle;
+    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) action.acceleration = iAcceleration; 
+    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) action.acceleration = -iAcceleration;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -230,37 +623,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-// simulation step
-// ---------------------------------------------------------------------------------------------------------
-void step(State& prevState, State& curState, const double& simDt, float& ix, float& iy) {
-    // simple kinematic “speed” in NDC units per second
-    const float SPEED = 0.8f;
 
-    // shift previous → current for interpolation
-    prevState = curState;
-
-    // apply input as velocity command
-    curState.x += (ix * SPEED) * static_cast<float>(simDt);
-    curState.y += (iy * SPEED) * static_cast<float>(simDt);
-
-    // debug to see coordinates
-    // std::cout << "X: " << curState.x << ", Y: " << curState.y << std::endl;
-
-    // keep quad fully on screen: NDC [-1, +1]
-    keepQuadNDC(prevState, curState);
-};
-
-// Keep quadrangle fully on screen: NDC [-1, +1]
-// ---------------------------------------------------------------------------------------------------------
-void keepQuadNDC(State& prevState, State& curState) {
-    // margin 
-    const float marginX = CAR_WIDTH / 2;
-    const float marginY = CAR_HEIGHT / 2;
-
-    // clip
-    curState.x = std::clamp(curState.x, -1.0f + marginX, 1.0f - marginX);
-    curState.y = std::clamp(curState.y, -1.0f + marginY, 1.0f - marginY);
-};
 /*
 NDC is abbeviated to Normalized Device Coordinates.
 If you want all the vertices to become visible, a clip process is needed between -1 and +1 after each vertex shader runs.
@@ -278,3 +641,4 @@ There are a total of 5 different coordinate systems that are of essential to you
 TODO: Research these five coordinate systems to deepen my understanding.
 
 */
+

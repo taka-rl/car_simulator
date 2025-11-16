@@ -5,7 +5,6 @@
 // ------------------------------------------------------------------------
 ShaderProgram::ShaderProgram(ShaderPaths paths) { 
     ID = makeShader(paths);
-    setUniFormLocation(ID, "uOffset");
 };
 
 // destructor
@@ -38,12 +37,6 @@ void ShaderProgram::setFloat(const std::string &name, float value) const {
 // getter for shader ID
 // ------------------------------------------------------------------------
 const unsigned int ShaderProgram::getShaderID() const noexcept { return ID; };
-const unsigned int ShaderProgram::getUOffsetLoc() const noexcept { return uOffsetLoc; };
-
-// setter 
-void ShaderProgram::setUniFormLocation(unsigned int& ID, const std::string& name) {
-    uOffsetLoc = glGetUniformLocation(ID, name.c_str());
-};
 
 
 // utility function for checking shader compilation/linking errors.

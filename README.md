@@ -1,5 +1,10 @@
 # Car Simulator 
-## Environment
+
+## Overview
+Top-down 2D car simulator: **car body + 4 wheels**, meters-first physics with a **fixed timestep**, and smooth rendering via a single **unit-quad** mesh and a **RectShader** (scale → rotate → translate).
+
+
+## Simulation Environment
 OS Windows 10
 
 ### Library
@@ -9,75 +14,42 @@ OS Windows 10
 | GLAD | Refer to https://rpxomi.github.io/  | https://glad.dav1d.de/ |
 | C++ g++ compiler (Windows 10)| 13.1.0   | - |
 
-## Folder structure
+### Controls
+A discrete action space is currently implemented and the car movement is calculated by a kinematic bicycle model with the input controls. 
+Combined actions (e.g. accelerate + steer) are possible.
+| Controls      | Description |
+|-----------|---------| 
+| Up | +acceleration |
+| Down | -acceleration |
+| Left | +steer(CCW) |
+| Right | -steer(CW) |
+| Escape | Quit |
 
-    ├── include                         # include
-    │   ├── glad                        # 
-    |   │   └── glad.h                  # 
-    │   ├── GLFW                        # 
-    |   │   ├── glfw3.h                 # 
-    |   │   └── glfw3native.h           # 
-    │   ├── KHR                         # 
-    |   │   └── khrplatform.h           # 
-    ├── lib                             # library
-    │   └── libglfw3dll.a               # 
-    ├── src                             # src
-    │   ├── shaders                     # 
-    |   │   ├── CarShader.cpp           # CarShader class 
-    |   │   ├── CarShader.h             # CarShader class header
-    |   │   ├── ParkingShader.cpp       # ParkingShader class 
-    |   │   ├── ParkingShader.h         # ParkingShader class header
-    |   │   ├── carShader.vert          # Shader for car
-    |   │   ├── carShader.frag          # Shader for car
-    |   │   ├── parkingShader.vert      # Shader for parking
-    |   │   ├── parkingShader.frag      # Shader for parking
-    |   │   ├── ShaderProgram.cpp       # ShaderProgram class 
-    |   │   └── ShaderProgram.h         # ShaderProgram class header
-    │   ├── car.cpp                     # Car class
-    │   ├── car.h                       #    
-    │   ├── glad.c                      # 
-    │   ├── Loader.cpp                  # Loader class
-    │   ├── Loader.h                    # Loader class header
-    │   ├── main.cpp                    # 
-    │   ├── main_car.cpp                # Temp cpp file for car.cpp
-    ├── glfw3.dll                       # 
-    └── README.md                       # Project documentation
-    
+
+## Documentation
+- Folder structure 
+Refer to [this page](https://github.com/taka-rl/car_simulator/docs/folder_structure.md)
+
+- Development Note
+Refer to [this page](https://github.com/taka-rl/car_simulator/docs/Car_Simulator_Dev_Notes.md)
 
 ## Build setting
 
 ### Build command
 ```cmd
-g++ src/main.cpp src/glad.c -o output/program_rectangle -Llib -Iinclude -lglfw3dll
-g++ -std=c++17 src/glad.c src/main.cpp  src/shaders/*.cpp  src/Loader.cpp -o output/program -Llib -Iinclude -lglfw3dll
-g++ src/car.cpp src/main_car.cpp -o output/program_car.exe
+g++ -std=c++17 src/glad.c src/main.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp -o output/program -Llib -Iinclude -lglfw3dll
 
 ```
 
 ## Development Plan
-### OpenGL
-#### 2D
-- [X] Learn OpenGL basics
-    - [X] Draw a rectangle
-    - [X] Key inputs
-    - [X] Move a rectangle based on the key inputs
-    - [X] Understand basics of rendering on screen
-    - [X] Create ShaderProgram class
-    - [X] Load GLSL files from different files
-    - [X] Draw two rectangles as a car and parking lot
-
 ### Simulation environment
-- [ ] Develop a parking environment
-    - [ ] Draw a car with each wheel
-    - [ ] Draw a car trajectory line
-    - [ ] Create a simple map
-    - [ ] Introcude a kinematic bicycle model to simulate the car movement
-    - [ ] Introduce acceleration and steering inputs with discrete action space
-    - [ ] Introduce continuous action space
-    - [ ] Set the parking lot randomly
-    - [ ] Add code to determine if the car is parked
 - [ ] Introduce reinforcement learning for the parking
-
+    - [ ] Research RL libraries for C++
+    - [ ] Build an environment like gymnasium-style environment in Python
+    - [ ] Introduce continuous action space
+    - [ ] Implement RL
+    - [ ] Training
+    - [ ] Evaluation
 
 ### Future development ideas
 - Path finding
