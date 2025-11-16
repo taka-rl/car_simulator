@@ -16,6 +16,7 @@ OS Windows 10
 
 ### Controls
 A discrete action space is currently implemented and the car movement is calculated by a kinematic bicycle model with the input controls. 
+Combined actions (e.g. accelerate + steer) are possible.
 | Controls      | Description |
 |-----------|---------| 
 | Up | +acceleration |
@@ -42,22 +43,13 @@ g++ -std=c++17 src/glad.c src/main.cpp src/Loader.cpp src/shaders/ShaderProgram.
 
 ## Development Plan
 ### Simulation environment
-- [ ] Develop a parking environment
-    - [X] Draw a car with each wheel
-    - [ ] Draw a car trajectory line
-    - [ ] Create a simple map
-    - [X] Introcude a kinematic bicycle model to simulate the car movement
-    - [X] Introduce acceleration and steering inputs with discrete action space
-    - [ ] Introduce continuous action space
-    - [ ] Set the parking lot randomly
-    - [ ] Add code to determine if the car is parked
 - [ ] Introduce reinforcement learning for the parking
     - [ ] Research RL libraries for C++
-    - [ ] Build an environment like gymnasium in Python
+    - [ ] Build an environment like gymnasium-style environment in Python
+    - [ ] Introduce continuous action space
     - [ ] Implement RL
     - [ ] Training
     - [ ] Evaluation
-
 
 ### Future development ideas
 - Path finding

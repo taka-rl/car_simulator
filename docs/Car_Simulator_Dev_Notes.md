@@ -58,7 +58,8 @@ For each entity (car body, wheels, parking rectangle), rendering is executed in 
 - Render **everything** (car + all wheels) from the same draw pose (`posDraw`, `yawDraw`, `deltaDraw`).
 
 #### Input Actions
-Discrete inputs: **acceleration** and **steering angle**.
+Discrete inputs: **acceleration** and **steering angle**.  
+Combined actions (e.g. accelerate + steer) are possible.
 
 ### Vehicle Dynamics
 

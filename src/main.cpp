@@ -419,19 +419,25 @@ int main()
     // renderer
     Renderer renderer(PPM, fbW, fbH);
 
+    // random positions for car and parking
+    const State randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);
+    const int marginX = randFloat(-5.0, 5.0), marginY = randFloat(-5.0, 5.0);
+    const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
+    
     // entities
     Entity carEntity(&quad, &rectShader);
     carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
     carEntity.setYaw(vehicleState.psi);
     carEntity.setWidth(CAR_HEIGHT);
     carEntity.setHeight(CAR_WIDTH);
+    carEntity.setPos(randCarPos);
 
     Entity parkingEntity(&quad, &rectShader);
     parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
     parkingEntity.setYaw(setParkingYaw());
     parkingEntity.setWidth(PARKING_HEIGHT);
     parkingEntity.setHeight(PARKING_WIDTH);
-    parkingEntity.setPos(setParkingPos(-15.f, 15.f, -10.f, 10.f));
+    parkingEntity.setPos(randParkingPos);
 
     Entity wheelFL(&quad, &rectShader), wheelFR(&quad, &rectShader), wheelRL(&quad, &rectShader), wheelRR(&quad, &rectShader);
 
@@ -601,10 +607,11 @@ void processInput(GLFWwindow *window, Action& action)
     const float iSteeringAngle = PI * 0.166f;  // about 30 degrees
     const float iAcceleration = 1.0f;    // 1 m/s
 
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = -iSteeringAngle; } 
-    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) { action.acceleration = 0.0f, action.steeringAngle = +iSteeringAngle; }
-    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) { action.acceleration = iAcceleration, action.steeringAngle = 0.0f; }
-    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) { action.acceleration = -iAcceleration, action.steeringAngle = 0.0f; }
+    // combined actions (e.g. accelerate + steer) are possible
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) action.steeringAngle = -iSteeringAngle;
+    if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) action.steeringAngle = +iSteeringAngle;
+    if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) action.acceleration = iAcceleration; 
+    if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) action.acceleration = -iAcceleration;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
