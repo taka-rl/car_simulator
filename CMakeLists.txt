@@ -1,0 +1,71 @@
+
+cmake_minimum_required(VERSION 3.10)
+project(CarSimulator VERSION 0.1.0 LANGUAGES C CXX)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Source root
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Add source files
+set(SOURCES
+    ${SRC_DIR}/shaders/ShaderProgram.cpp
+    ${SRC_DIR}/shaders/RectShader.cpp
+    ${SRC_DIR}/entities/Entity.cpp
+    ${SRC_DIR}/renderers/Renderer.cpp
+    ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
+    ${SRC_DIR}/Loader.cpp
+    ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/glad.c
+)
+
+# Create executable
+add_executable(CarSimulator ${SOURCES})
+
+# Headers (your glad/GLFW headers live in include/)
+target_include_directories(CarSimulator PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+)
+
+# Library and include
+if (WIN32)
+  # --- Windows path (your current setup) ---
+  # Link GLFW import lib directly + system libs
+  target_link_libraries(CarSimulator PRIVATE
+    ${CMAKE_SOURCE_DIR}/lib/libglfw3dll.a   # <— your import lib
+    opengl32
+    gdi32
+    user32
+    shell32
+  )
+
+  # local includes/libraries will be removed later so GLFW will be needed to install on Windows (e.g. vcpkg install glfw3)
+  # find_package(OpenGL REQUIRED)
+
+  # Depending on how GLFW is installed, the package name may be glfw or glfw3.
+  # You might need to adjust this line based on your system.
+  # find_package(glfw3 REQUIRED)
+
+elseif(APPLE)
+  # --- macOS path ---
+  # local includes/libraries will be removed later so GLFW will be needed to install on macOS (e.g. Homebrew: brew install glfw)
+  # find_package(OpenGL REQUIRED)
+
+  # Depending on how GLFW is installed, the package name may be glfw or glfw3.
+  # You might need to adjust this line based on your system.
+  # find_package(glfw3 REQUIRED)
+
+  # target_link_libraries(CarSimulator PRIVATE
+  #     glfw                          # or glfw3, depending on the package
+  #     OpenGL::GL
+  # )  
+
+else()
+  # --- Linux or others (future) ---
+endif()
+
+# Enable testing (optional)
+include(CTest)
+enable_testing()
