@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(CarSimulator VERSION 0.1.0 LANGUAGES C CXX)
 
 # Set C++ standard
@@ -69,3 +69,21 @@ endif()
 # Enable testing (optional)
 include(CTest)
 enable_testing()
+
+if (BUILD_TESTING)
+  # CI gtest setting 
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.17.0   # C++17
+  )
+  FetchContent_MakeAvailable(googletest)
+
+  set(TEST_NAME ${PROJECT_NAME}_tests)
+  add_executable(${TEST_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_parking_math.cpp)
+  target_link_libraries(${TEST_NAME} PRIVATE GTest::gtest_main)
+
+  include(GoogleTest)
+  gtest_discover_tests(${TEST_NAME})
+endif()
