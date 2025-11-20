@@ -1,8 +1,3 @@
-// CMakesLists.txt push
-// create test_parking_math.cp
-// create CI.yaml for CI process
-
-
 #include <gtest/gtest.h>
 
 // temporal function for temporary
