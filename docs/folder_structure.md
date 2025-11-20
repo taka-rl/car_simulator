@@ -35,6 +35,8 @@
     │   ├── Loader.h                    # Loader interface
     │   ├── main.cpp                    # App entry point: setup, fixed-step sim, render loop
     │   └── main_car.cpp                # Temporary a cpp file, will be deleted later
+    ├── tests                           # Third-party libraries (prebuilt/import libs)
+    │   └── test_parking_math.cpp       # unit tests for parking math    
     ├── CMakeLists.txt                  # Optional CMake build script
     ├── glfw3.dll                       # GLFW runtime DLL (must be alongside the executable on Windows)
     └── README.md                       # Top-level readme: overview, build, controls, roadmap
