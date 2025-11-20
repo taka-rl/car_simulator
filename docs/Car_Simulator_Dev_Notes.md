@@ -96,3 +96,5 @@ One step forward:
 - v_(t+1) = clamp(v_t + v_dot * dt, -v_max, +v_max)
 - psi_(t+1) = psi_t + psi_dot * dt
 
+## CI process
+Refer to [this page](https://github.com/taka-rl/car_simulator/docs/CI_Process.md)

@@ -36,10 +36,27 @@ Refer to [this page](https://github.com/taka-rl/car_simulator/docs/Car_Simulator
 ## Build setting
 
 ### Build command
+- without CMake
 ```cmd
 g++ -std=c++17 src/glad.c src/main.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp -o output/program -Llib -Iinclude -lglfw3dll
-
 ```
+- CMake
+1. Configure & Generate Build Files
+```
+cmake -B build -S . -DBUILD_TESTING=OFF (Without tests)
+```
+or
+``` 
+cmake -B build -S . -DBUILD_TESTING=ON (With tests)
+```
+
+2. Build / Link the Project
+```
+cmake --build build --config Release
+```
+
+## CI process
+Refer to [this page](https://github.com/taka-rl/car_simulator/docs/CI_Process.md)
 
 ## Development Plan
 ### Simulation environment
