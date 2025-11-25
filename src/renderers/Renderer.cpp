@@ -21,7 +21,7 @@ void Renderer::draw(const Entity& e) const {
 
     // 2. convert meters to NDC
     const State ndcPos = metersToNDC(e.getPosX(), e.getPosY());
-    const State ndcSize = rectSizeToNDC(e.getWidth(), e.getHeight());
+    const State ndcSize = rectSizeToNDC(e.getWidth(), e.getLength());
 
     e.rectShader->setOffset(ndcPos.x, ndcPos.y);
     e.rectShader->setYaw(e.getYaw());
@@ -47,9 +47,9 @@ State Renderer::metersToNDC(float x_m, float y_m) const {
 
 // convcrts a full size (meters) into an NDC full size. for uScale
 // ------------------------------------------------------------------------
-State Renderer::rectSizeToNDC(float width_m, float height_m) const {
+State Renderer::rectSizeToNDC(float width_m, float length_m) const {
     return State{ 
         (2.0f * width_m * ppm / fbW), 
-        (2.0f * height_m * ppm / fbH)
+        (2.0f * length_m * ppm / fbH)
     };
 };

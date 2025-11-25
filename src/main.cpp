@@ -32,17 +32,17 @@ const unsigned int SCR_HEIGHT = 600;
 
 // rectangle as a car size in meters
 const float CAR_WIDTH = 2.0f;
-const float CAR_HEIGHT = 4.0f;
+const float CAR_LENGTH = 4.0f;
 
 // rectangle as a parking lot size in meters
 const float PARKING_WIDTH = 3.5f;
-const float PARKING_HEIGHT = 6.0f;
+const float PARKING_LENGTH = 6.0f;
 
 // wheels
 struct WheelSize { float length{0.75f}, width{0.35f}; };
 struct VehicleParams {
     // car body
-    float carWid{CAR_WIDTH}, carLen{CAR_HEIGHT};
+    float carWid{CAR_WIDTH}, carLen{CAR_LENGTH};
 
     // wheel
     WheelSize wheel{0.75f, 0.35f};
@@ -81,11 +81,11 @@ inline State interp(const State& prev, const State& curr, float alpha) {
 
 // keep the entire rectangle visible on screen.
 // ------------------------------------------------------------------------
-inline void keepOnScreenMeters(State& s, float width_m, float height_m, int fbW, int fbH, float ppm) {
+inline void keepOnScreenMeters(State& s, float width_m, float length_m, int fbW, int fbH, float ppm) {
     const float worldHalfW = (fbW / ppm) * 0.5f;
     const float worldHalfH = (fbH / ppm) * 0.5f;
     const float marginX = width_m * 0.5f;
-    const float marginY = height_m * 0.5f;
+    const float marginY = length_m * 0.5f;
     s.x = std::clamp(s.x, -worldHalfW + marginX, worldHalfW - marginX);
     s.y = std::clamp(s.y, -worldHalfH + marginY, worldHalfH - marginY);
 };
@@ -210,9 +210,9 @@ inline bool isParkedAtCenter(const State& carPos, const float carYaw, const Stat
  * 
  * This function performs an exact 2D rectangle-in-rectangle test in the parking lot frame.
  * 
-  1. Interpret CAR_HEIGHT as car length (along car local x: forward)
+  1. Interpret CAR_LENGTH as car length (along car local x: forward)
  *     and CAR_WIDTH as car width (along car local y: left). The parking slot
- *     uses PARKING_HEIGHT as slot length and PARKING_WIDTH as slot width.
+ *     uses PARKING_LENGTH as slot length and PARKING_WIDTH as slot width.
  *
  *  2. Define the parking-slot frame:
  *       - Origin at parkingPos
@@ -261,9 +261,9 @@ inline bool isParked(const State& carPos, float carYaw, const State& parkingPos,
     // }
     
     // calculate half sizes (meters)
-    const float halfCarLen = CAR_HEIGHT * 0.5f;       // along car local x (forward)
+    const float halfCarLen = CAR_LENGTH * 0.5f;       // along car local x (forward)
     const float halfCarWid = CAR_WIDTH  * 0.5f;       // along car local y (left)
-    const float halfSlotLen = PARKING_HEIGHT * 0.5f;  // along slot local X
+    const float halfSlotLen = PARKING_LENGTH * 0.5f;  // along slot local X
     const float halfSlotWid = PARKING_WIDTH  * 0.5f;  // along slot local Y
 
     // Car center in slot frame
@@ -421,22 +421,22 @@ int main()
 
     // random positions for car and parking
     const State randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);
-    const int marginX = randFloat(-5.0, 5.0), marginY = randFloat(-5.0, 5.0);
+    const float marginX = randFloat(-5.0, 5.0), marginY = randFloat(-5.0, 5.0);
     const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
     
     // entities
     Entity carEntity(&quad, &rectShader);
     carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
     carEntity.setYaw(vehicleState.psi);
-    carEntity.setWidth(CAR_HEIGHT);
-    carEntity.setHeight(CAR_WIDTH);
+    carEntity.setWidth(CAR_LENGTH);
+    carEntity.setLength(CAR_WIDTH);
     carEntity.setPos(randCarPos);
 
     Entity parkingEntity(&quad, &rectShader);
     parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
     parkingEntity.setYaw(setParkingYaw());
-    parkingEntity.setWidth(PARKING_HEIGHT);
-    parkingEntity.setHeight(PARKING_WIDTH);
+    parkingEntity.setWidth(PARKING_LENGTH);
+    parkingEntity.setLength(PARKING_WIDTH);
     parkingEntity.setPos(randParkingPos);
 
     Entity wheelFL(&quad, &rectShader), wheelFR(&quad, &rectShader), wheelRL(&quad, &rectShader), wheelRR(&quad, &rectShader);
@@ -446,7 +446,7 @@ int main()
     for (Entity* wheel : {&wheelFL, &wheelFR, &wheelRL, &wheelRR}) {
         wheel->setColor({0.4f, 0.4f, 0.4f, 1.0f});
         wheel->setWidth(wheelLength);
-        wheel->setHeight(wheelWidth);
+        wheel->setLength(wheelWidth);
     }
     
 
@@ -504,7 +504,7 @@ int main()
             curPsi = vehicleState.psi;
             curDelta  = vehicleState.delta;
 
-            keepOnScreenMeters(vehicleState.pos, carEntity.getWidth(), carEntity.getHeight(),fbW, fbH, PPM);
+            keepOnScreenMeters(vehicleState.pos, carEntity.getWidth(), carEntity.getLength(),fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
@@ -539,7 +539,7 @@ int main()
         Entity seg(&quad, &rectShader);
         seg.setPos(center);
         seg.setWidth(0.05f);
-        seg.setHeight(len);
+        seg.setLength(len);
         seg.setYaw(segYaw);
         seg.setColor({0.9f, 0.9f, 0.2f, 1.0f});
 

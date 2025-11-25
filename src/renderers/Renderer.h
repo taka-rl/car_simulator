@@ -36,7 +36,7 @@ private:
 
     // convcrts a full size (meters) into an NDC full size. for uScale
     // ------------------------------------------------------------------------
-    State rectSizeToNDC(float width_m, float height_m) const;
+    State rectSizeToNDC(float width_m, float length_m) const;
 
     float ppm{20.f};
     int fbW{0}, fbH{0};
