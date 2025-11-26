@@ -12,6 +12,8 @@
 #include "entities/Entity.h"
 #include "renderers/Renderer.h"
 #include "vehicledynamics/BicycleModel.h"
+#include "vehicledynamics/VehicleTypes.h"
+#include "core/Config.h"
 
 
 // Global (or file-scope) RNG – constructed once
@@ -20,47 +22,9 @@ static std::mt19937 g_rng{ std::random_device{}() };
 // simulation state
 // simulation state stays as meters
 
-const float PPM = 20.f;  // 1 pixel is 0.05 m (5 cm)
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window, Action& action);
 
-// settings
-// window size
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-
-// rectangle as a car size in meters
-const float CAR_WIDTH = 2.0f;
-const float CAR_LENGTH = 4.0f;
-
-// rectangle as a parking lot size in meters
-const float PARKING_WIDTH = 3.5f;
-const float PARKING_LENGTH = 6.0f;
-
-// wheels
-struct WheelSize { float length{0.75f}, width{0.35f}; };
-struct VehicleParams {
-    // car body
-    float carWid{CAR_WIDTH}, carLen{CAR_LENGTH};
-
-    // wheel
-    WheelSize wheel{0.75f, 0.35f};
-
-    // margins
-    float front_margin{0.20f}, rear_margin{0.20f}, side_margin{0.10f};
-
-    // wheel placement
-    float Lf{};     // front wheel
-    float Lr{};     // rear wheel
-    float track{};  // wheel centers
-
-    void finalize() {
-        Lf = (carLen * 0.5f) - (wheel.length * 0.5f + front_margin);
-        Lr = (carLen * 0.5f) - (wheel.length * 0.5f + rear_margin);
-        track = carWid - (wheel.width + 2.0f * side_margin);
-    }
-};
 
 // Clamp accumulator to avoid spiral of death after stalls
 inline void clampAccumulator(double& accum, const double simDt, double maxSteps = 5.0) {
