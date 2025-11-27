@@ -4,7 +4,7 @@
 #include <array>
 
 
-struct State { float x, y; };
+#include "../envs/ParkingEnv.h"
 
 // forward declarations at global scope
 class Loader;

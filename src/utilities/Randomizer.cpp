@@ -11,7 +11,7 @@ float Randomizer::randFloat(float minVal, float maxVal) {
     return dist(g_rng);
 }
 
-// return int in [minVal, maxVal)
+// return a random int number in [minVal, maxVal)
 // ------------------------------------------------------------------------
 int Randomizer::randInt(int minVal, int maxVal) {
     std::uniform_int_distribution<int> dist(minVal, maxVal);

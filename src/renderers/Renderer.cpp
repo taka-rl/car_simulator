@@ -1,7 +1,4 @@
 #include "Renderer.h"
-#include "../entities/Entity.h"
-#include "../shaders/RectShader.h"
-#include "../Loader.h"
 
 
 // constructor

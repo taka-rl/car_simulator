@@ -3,6 +3,12 @@
 
 #include <algorithm>
 
+#include "../envs/ParkingEnv.h"
+#include "../entities/Entity.h"
+#include "../shaders/RectShader.h"
+#include "../Loader.h"
+
+
 // forward declarations at global scope
 class Entity;
 class Loader;
