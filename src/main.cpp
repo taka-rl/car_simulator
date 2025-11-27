@@ -14,10 +14,10 @@
 #include "vehicledynamics/BicycleModel.h"
 #include "vehicledynamics/VehicleTypes.h"
 #include "core/Config.h"
+#include "utilities/MathUtils.h"
+#include "utilities/Randomizer.h"
 
 
-// Global (or file-scope) RNG – constructed once
-static std::mt19937 g_rng{ std::random_device{}() };
 
 // simulation state
 // simulation state stays as meters
@@ -54,37 +54,18 @@ inline void keepOnScreenMeters(State& s, float width_m, float length_m, int fbW,
     s.y = std::clamp(s.y, -worldHalfH + marginY, worldHalfH - marginY);
 };
 
-// angle helpers
-// PI is defined in BicycleModel.h
-inline float wrapPi(float a){ while(a<=-PI)a+=2*PI; while(a>PI)a-=2*PI; return a; }
-inline float lerpAngle(float a,float b,float t){ float d=wrapPi(b-a); return wrapPi(a + d*t); }
-
-// return a random float number in [minVal, maxVal)
-// ------------------------------------------------------------------------
-inline float randFloat(float minVal, float maxVal) {
-    std::uniform_real_distribution<float> dist(minVal, maxVal);
-    return dist(g_rng);
-}
-
-// return int in [minVal, maxVal)
-// ------------------------------------------------------------------------
-inline int randInt(int minVal, int maxVal) {
-    std::uniform_int_distribution<int> dist(minVal, maxVal);
-    return dist(g_rng);
-}
-
 // set the parking lot location randomly
 // ------------------------------------------------------------------------
-inline State setParkingPos(float minX, float maxX, float minY, float maxY) {
-    float x = randFloat(minX, maxX);
-    float y = randFloat(minY, maxY);
+inline State setParkingPos(Randomizer* randomizer, float minX, float maxX, float minY, float maxY) {
+    float x = randomizer->randFloat(minX, maxX);
+    float y = randomizer->randFloat(minY, maxY);
     return {x, y};
 };
 
 // return yaw either 0 or 90 degree
 // ------------------------------------------------------------------------
-inline float setParkingYaw() {
-    const int k = randInt(0, 1);  // Currently yaw degree shall be 0 or 90 degree
+inline float setParkingYaw(Randomizer* randomizer) {
+    const int k = randomizer->randInt(0, 1);  // Currently yaw degree shall be 0 or 90 degree
     float yawDeg = (k == 0) ? 0.0f : 90.0f;
     return yawDeg * PI / 180.0f;
 }
@@ -384,8 +365,9 @@ int main()
     Renderer renderer(PPM, fbW, fbH);
 
     // random positions for car and parking
-    const State randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);
-    const float marginX = randFloat(-5.0, 5.0), marginY = randFloat(-5.0, 5.0);
+    Randomizer randomizer;
+    const State randParkingPos = setParkingPos(&randomizer, -15.f, 15.f, -10.f, 10.f);
+    const float marginX = randomizer.randFloat(-5.0, 5.0), marginY = randomizer.randFloat(-5.0, 5.0);
     const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
     
     // entities
@@ -398,7 +380,7 @@ int main()
 
     Entity parkingEntity(&quad, &rectShader);
     parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
-    parkingEntity.setYaw(setParkingYaw());
+    parkingEntity.setYaw(setParkingYaw(&randomizer));
     parkingEntity.setWidth(PARKING_LENGTH);
     parkingEntity.setLength(PARKING_WIDTH);
     parkingEntity.setPos(randParkingPos);

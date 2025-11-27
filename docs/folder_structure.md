@@ -14,9 +14,14 @@
     ├── lib                             # Third-party libraries (prebuilt/import libs)
     │   └── libglfw3dll.a               # Import library for GLFW DLL (MinGW)
     ├── src                             # Application source code
+    │   ├── core                        # 
+    |   │   └──  Config.h               # Global sim/game config: constants and types that are shared across multiple subsystems 
     │   ├── entities                    # Scene/domain objects with transforms/sizes/colors
     |   │   ├── Entity.cpp              # Entity base implementation
     |   │   └── Entity.h                # Entity base interface (pos/yaw/size/color)
+    │   ├── envs                        # 
+    |   │   ├── ParkingEnv.cpp          # 
+    |   │   └── ParkingEnv.h            #    
     │   ├── renderers                   # Rendering system glue
     |   │   ├── Renderer.cpp            # Submits entities using shared mesh/material
     |   │   └── Renderer.h              # Renderer interface
@@ -27,6 +32,13 @@
     |   │   ├── rectShader.frag         # Fragment shader (solid color)
     |   │   ├── ShaderProgram.cpp       # GL program compile/link utilities
     |   │   └── ShaderProgram.h         # ShaderProgram wrapper interface
+    │   ├── simulator                   # 
+    |   │   ├── Simulator.cpp           # Keep rendering + input + timing in it
+    |   │   └── Simulator.h             # Simulator interface
+    │   ├── utilities                   # 
+    |   │   ├── MathUtils.h             # inline constexpr float PI, wrapPi, lerpAngle
+    |   │   ├── Randomizer.cpp          # Randomizer class with randInt, randFloat
+    |   │   └── Randomizer.h            # Randomizer interface
     │   ├── vehicledynamics             # Vehicle models
     |   │   ├── BicycleModel.cpp        # Kinematic bicycle model integration/limits
     |   │   └── BicycleModel.h          # BicycleModel interface

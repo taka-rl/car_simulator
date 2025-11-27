@@ -15,6 +15,7 @@ set(SOURCES
     ${SRC_DIR}/shaders/RectShader.cpp
     ${SRC_DIR}/entities/Entity.cpp
     ${SRC_DIR}/renderers/Renderer.cpp
+    ${SRC_DIR}/utilities/Randomizer.cpp    
     ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
     ${SRC_DIR}/Loader.cpp
     ${SRC_DIR}/main.cpp

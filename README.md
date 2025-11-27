@@ -38,7 +38,7 @@ Refer to [this page](https://github.com/taka-rl/car_simulator/docs/Car_Simulator
 ### Build command
 - without CMake
 ```cmd
-g++ -std=c++17 src/glad.c src/main.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp -o output/program -Llib -Iinclude -lglfw3dll
+g++ -std=c++17 src/glad.c src/main.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp src/utilities/Randomizer.cpp -o output/program -Llib -Iinclude -lglfw3dll
 ```
 - CMake
 1. Configure & Generate Build Files

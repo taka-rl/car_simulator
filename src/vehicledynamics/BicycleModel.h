@@ -8,9 +8,7 @@
 
 
 #include "../entities/Entity.h"
-
-
-inline constexpr float PI = 3.14159265358979323846f;
+#include "../utilities/MathUtils.h"
 
 
 struct BicycleModelLimits {
