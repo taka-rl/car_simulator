@@ -18,7 +18,9 @@ set(SOURCES
     ${SRC_DIR}/utilities/Randomizer.cpp    
     ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
     ${SRC_DIR}/envs/ParkingEnv.cpp
+    ${SRC_DIR}/simulator/Simulator.cpp
     ${SRC_DIR}/Loader.cpp
+    ${SRC_DIR}/Window.cpp
     ${SRC_DIR}/main.cpp
     ${SRC_DIR}/glad.c
 )
