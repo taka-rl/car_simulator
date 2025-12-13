@@ -8,27 +8,13 @@
 #include "ParkingParams.h"
 #include "../core/Config.h"
 #include "../utilities/Randomizer.h" 
+#include "../vehicledynamics/VehicleTypes.h"
 
 
 // forward declarations at global scope
 class Simulator;
 class Randomizer;
 
-
-// consider definition location for the following structs later
-struct State { float x, y; };
-
-struct Action {
-    float acceleration{0.0f};
-    float steeringAngle{0.0f};
-};
-
-struct VehicleState {
-    State pos{0.0f, 0.0f};
-    float psi{0.0f};
-    float velocity{0.0f};
-    float delta{0.0f};
-};
 
 /**
  * Parking Env Class

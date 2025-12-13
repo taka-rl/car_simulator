@@ -4,6 +4,20 @@
 #include "../core/Config.h"
 
 
+struct State { float x, y; };
+
+struct Action {
+    float acceleration{0.0f};
+    float steeringAngle{0.0f};
+};
+
+struct VehicleState {
+    State pos{0.0f, 0.0f};
+    float psi{0.0f};
+    float velocity{0.0f};
+    float delta{0.0f};
+};
+
 // wheels
 struct WheelSize { float length{0.75f}, width{0.35f}; };
 struct VehicleParams {
