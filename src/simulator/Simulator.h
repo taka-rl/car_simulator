@@ -16,6 +16,10 @@
 #include "../envs/ParkingEnv.h"
 
 
+// forward declarations at global scope
+struct Observation;
+
+
 /**
  * Parking Env Class
  * ---------------------------

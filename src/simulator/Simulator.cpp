@@ -23,7 +23,7 @@ namespace {
 
 // constructor
 Simulator::Simulator(GLFWwindow* window) : 
-    window(window), randomizer(), env(&randomizer), bicycleModel(vehicleParams.Lf + vehicleParams.Lr), 
+    window(window), randomizer(), bicycleModel(vehicleParams.Lf + vehicleParams.Lr), env(&randomizer, &bicycleModel),  
     carEntity(quad.get(), rectShader.get()), parkingEntity(quad.get(), rectShader.get()), 
     wheelFL(quad.get(), rectShader.get()), wheelFR(quad.get(), rectShader.get()),
     wheelRL(quad.get(), rectShader.get()), wheelRR(quad.get(), rectShader.get()) {};
@@ -78,27 +78,29 @@ void Simulator::initSimulationState() {
     bicycleModel = BicycleModel(vehicleParams.Lf + vehicleParams.Lr);
 }
 
-void Simulator::initEntities() {
-
-    // random positions for car and parking
-    const State randParkingPos = env.setParkingPos(-15.f, 15.f, -10.f, 10.f);
-    const float marginX = randomizer.randFloat(-5.0, 5.0), marginY = randomizer.randFloat(-5.0, 5.0);
-    const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};   
+// initialize entities: car, parking lot, wheels and trajectory
+// ------------------------------------------------------------------------
+void Simulator::initEntities() {   
+    // reset the environment
+    env.reset();
 
     // entities
+    const VehicleState vehicleState = env.getVehicleState();
     carEntity = Entity(quad.get(), rectShader.get());
     carEntity.setColor({0.15f, 0.65f, 0.15f, 1.0f});
     carEntity.setYaw(vehicleState.psi);
     carEntity.setWidth(CAR_LENGTH);
     carEntity.setLength(CAR_WIDTH);
-    carEntity.setPos(randCarPos);
+    carEntity.setPos(vehicleState.pos);
 
+    const State parkingPos = env.getParkingPos();
+    const float parkingYaw = env.getParkingYaw();
     parkingEntity = Entity(quad.get(), rectShader.get());
     parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
-    parkingEntity.setYaw(env.setParkingYaw());
+    parkingEntity.setYaw(parkingYaw);
     parkingEntity.setWidth(PARKING_LENGTH);
     parkingEntity.setLength(PARKING_WIDTH);
-    parkingEntity.setPos(randParkingPos);
+    parkingEntity.setPos(parkingPos);
 
     wheelFL = Entity(quad.get(), rectShader.get()), wheelFR = Entity(quad.get(), rectShader.get());
     wheelRL = Entity(quad.get(), rectShader.get()), wheelRR = Entity(quad.get(), rectShader.get());
@@ -135,10 +137,15 @@ void Simulator::placeWheel(Entity& wheel, float ax, float ay, bool front,
 };
 
 void Simulator::run() {
+    // Initialize previous and current state
+
+    prevState = env.getVehicleState().pos;
+    curState = env.getVehicleState().pos;
+
+
     // render loop
     // -----------
-    while (!glfwWindowShouldClose(window))
-    {
+    while (!glfwWindowShouldClose(window)) {      
         // timing
         double now = glfwGetTime();
         double frameDt = now - lastTime;
@@ -154,19 +161,20 @@ void Simulator::run() {
         // fixed-step simulation
         while (accumulator >= simDt) {
             // set the privious state
-            prevState = vehicleState.pos;
-            prevPsi = vehicleState.psi;
-            prevDelta = vehicleState.delta;
+            prevState = curState;
+            prevPsi = curPsi;
+            prevDelta = curDelta;
             
             // update state
-            bicycleModel.kinematicAct(action, vehicleState, static_cast<float>(simDt));
-            
-            // set the current state
-            curState = vehicleState.pos;
-            curPsi = vehicleState.psi;
-            curDelta  = vehicleState.delta;
+            const float dt = static_cast<float>(simDt);
+            Observation obs = env.step(action, dt);
 
-            keepOnScreenMeters(vehicleState.pos, carEntity.getWidth(), carEntity.getLength(),fbW, fbH, PPM);
+            // set the current state
+            curState = obs.vehicleState.pos;
+            curPsi = obs.vehicleState.psi;
+            curDelta  = obs.vehicleState.delta;
+
+            keepOnScreenMeters(obs.vehicleState.pos, carEntity.getWidth(), carEntity.getLength(),fbW, fbH, PPM);
             accumulator -= simDt;
         }
 
@@ -209,9 +217,6 @@ void Simulator::run() {
 
         };
 
-        // check parking success
-        bool parkingSuccess = env.isParked({carEntity.getPosX(), carEntity.getPosY()}, carEntity.getYaw(), {parkingEntity.getPosX(), parkingEntity.getPosY()}, parkingEntity.getYaw());
-
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -225,7 +230,7 @@ void Simulator::run() {
         placeWheel(wheelFR, anchors[1][0], anchors[1][1], true, posDraw, yawDraw, deltaDraw);
         placeWheel(wheelRR, anchors[2][0], anchors[2][1], false, posDraw, yawDraw, 0.0f);
         placeWheel(wheelRL, anchors[3][0], anchors[3][1], false, posDraw, yawDraw, 0.0f);
-        
+            
         renderer->draw(wheelFL);
         renderer->draw(wheelFR);
         renderer->draw(wheelRR);

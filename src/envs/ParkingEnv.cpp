@@ -1,14 +1,69 @@
 #include "ParkingEnv.h"
 
 // constructor
-ParkingEnv::ParkingEnv(Randomizer* randomizer) : randomizer(randomizer) {}
+ParkingEnv::ParkingEnv(Randomizer* randomizer, BicycleModel* bicycleModel) : randomizer(randomizer), bicycleModel(bicycleModel){};
 
 
-void step() {
+Observation ParkingEnv::step(Action&action, const float& simDt) {
+
+    // apply the action using bicycle model
+    bicycleModel->kinematicAct(action, vehicleState, simDt);
+
+    // reward calculation
+    rewardValue = reward();
+
+    return Observation { 
+        {
+            State{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
+            State{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
+            State{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}, 
+            State{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}
+        },
+        vehicleState
+    };
     
 }
-void reset() {}
-void reward() {}
+// reset the environement to initial state
+// ------------------------------------------------------------------------
+void ParkingEnv::reset() {
+    // random positions and yaw for parking
+    const State randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);  // temporary values
+    parkingPos = randParkingPos;
+    parkingYaw = setParkingYaw();
+
+    // random positions and yaw for car
+    const float marginX = randomizer->randFloat(-5.0, 5.0), marginY = randomizer->randFloat(-5.0, 5.0);
+    const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
+
+    // calculate each corner of the parking lot relative to the car position
+    const State relCorner1 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
+    const State relCorner2 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
+    const State relCorner3 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
+    const State relCorner4 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
+
+    // set observation
+    vehicleState.pos = randCarPos;
+    vehicleState.psi = 0.0f;
+    vehicleState.velocity = 0.0f;
+    vehicleState.delta = 0.0f;
+
+    observation.vehicleState = vehicleState;
+    observation.distCorners = {
+        State{relCorner1.x - randCarPos.x, relCorner1.y - randCarPos.y}, State{relCorner2.x - randCarPos.x, relCorner2.y - randCarPos.y}, 
+        State{relCorner3.x - randCarPos.x, relCorner3.y - randCarPos.y}, State{relCorner4.x - randCarPos.x, relCorner4.y - randCarPos.y}
+    };
+
+}
+
+float ParkingEnv::reward() {
+    // check parking success
+    bool parkingSuccess = isParked({vehicleState.pos.x, vehicleState.pos.y}, vehicleState.psi, {parkingPos.x, parkingPos.y}, parkingYaw);
+    if (parkingSuccess) {
+        return 1.0f;
+    } else {
+        return 0.0f;
+    }
+}
 
 // set the parking lot location randomly
 // ------------------------------------------------------------------------
