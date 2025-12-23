@@ -70,9 +70,11 @@ void Simulator::initSimulationState() {
     }};
 
     // previous and current state for interpolation
-    prevState = vehicleState.pos, curState = vehicleState.pos;
-    prevPsi = vehicleState.psi, curPsi = vehicleState.psi;
-    prevDelta = vehicleState.delta, curDelta = vehicleState.delta;
+    prevState = env.getVehicleState().pos;
+    prevPsi = env.getVehicleState().psi;
+    curState = env.getVehicleState().pos;
+    curPsi = env.getVehicleState().psi;
+    curDelta = env.getVehicleState().delta;
 
     // kinematic model
     bicycleModel = BicycleModel(vehicleParams.Lf + vehicleParams.Lr);
@@ -137,12 +139,6 @@ void Simulator::placeWheel(Entity& wheel, float ax, float ay, bool front,
 };
 
 void Simulator::run() {
-    // Initialize previous and current state
-
-    prevState = env.getVehicleState().pos;
-    curState = env.getVehicleState().pos;
-
-
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window)) {      

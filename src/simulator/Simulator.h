@@ -45,7 +45,6 @@ private:
     int fbW = 0, fbH = 0;
 
     // Core systems
-    VehicleState vehicleState;
     VehicleParams vehicleParams;
     BicycleModel bicycleModel;
     Randomizer randomizer;
