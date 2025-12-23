@@ -69,7 +69,7 @@ void Simulator::initSimulationState() {
         {-vehicleParams.Lr, +vehicleParams.track*0.5f}
     }};
 
-    // previous and current state for interpolation
+    // previous and current Position2D for interpolation
     prevState = env.getVehicleState().pos;
     prevPsi = env.getVehicleState().psi;
     curState = env.getVehicleState().pos;
@@ -95,7 +95,7 @@ void Simulator::initEntities() {
     carEntity.setLength(CAR_WIDTH);
     carEntity.setPos(vehicleState.pos);
 
-    const State parkingPos = env.getParkingPos();
+    const Position2D parkingPos = env.getParkingPos();
     const float parkingYaw = env.getParkingYaw();
     parkingEntity = Entity(quad.get(), rectShader.get());
     parkingEntity.setColor({1.0f, 0.0f, 0.0f, 1.0f});
@@ -121,7 +121,7 @@ void Simulator::initEntities() {
 }
 
 void Simulator::placeWheel(Entity& wheel, float ax, float ay, bool front, 
-                      const State& pos, const float& yawDraw, const float& steer) {
+                      const Position2D& pos, const float& yawDraw, const float& steer) {
     
     const float c = cosf(yawDraw), s = sinf(yawDraw);
 
@@ -156,16 +156,16 @@ void Simulator::run() {
 
         // fixed-step simulation
         while (accumulator >= simDt) {
-            // set the privious state
+            // set the privious Position2D
             prevState = curState;
             prevPsi = curPsi;
             prevDelta = curDelta;
             
-            // update state
+            // update Position2D
             const float dt = static_cast<float>(simDt);
             Observation obs = env.step(action, dt);
 
-            // set the current state
+            // set the current Position2D
             curState = obs.vehicleState.pos;
             curPsi = obs.vehicleState.psi;
             curDelta  = obs.vehicleState.delta;
@@ -176,7 +176,7 @@ void Simulator::run() {
 
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
-        const State posDraw = interp(prevState, curState, alpha);
+        const Position2D posDraw = interp(prevState, curState, alpha);
         const float yawDraw = lerpAngle(prevPsi, curPsi, alpha);
         const float deltaDraw = prevDelta + (curDelta - prevDelta) * alpha;
 
@@ -194,7 +194,7 @@ void Simulator::run() {
         const float minSegLen = 0.01f;   // 1 cm
         if (len > minSegLen) {
             // center of the segment
-            State center{
+            Position2D center{
                 0.5f * (prevState.x + curState.x),
                 0.5f * (prevState.y + curState.y)
             };

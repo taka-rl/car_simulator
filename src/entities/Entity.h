@@ -13,7 +13,7 @@ class RectShader;
 class Entity {
 
 public:
-    State pos_m{0.f, 0.f};
+    Position2D pos_m{0.f, 0.f};
     float yaw{0.f}, width_m{0.f}, length_m{0.f};
     std::array<float, 4> color = {1.f, 1.f, 1.f, 1.f};  // color[r, g, b, a]
     
@@ -39,7 +39,7 @@ public:
     
     // setter
     // ------------------------------------------------------------------------
-    void setPos(const State& newPos);
+    void setPos(const Position2D& newPos);
     void setYaw(const float newYaw);
     void setWidth(const float newWidth);
     void setLength(const float newLength);

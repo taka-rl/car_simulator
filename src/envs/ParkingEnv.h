@@ -22,7 +22,7 @@ struct Action;
 
 // observation structure
 struct Observation {
-    std::array<std::array<State, 1>, 4> distCorners;  // the relative coordinate system of the car from the parking lot corners to the center of the car
+    std::array<std::array<Position2D, 1>, 4> distCorners;  // the relative coordinate system of the car from the parking lot corners to the center of the car
     VehicleState vehicleState;
 };
 
@@ -57,13 +57,13 @@ public:
     // getter 
     Observation getObservation() const { return observation; }
     VehicleState getVehicleState() const { return vehicleState; }
-    State getParkingPos() const { return parkingPos; }
+    Position2D getParkingPos() const { return parkingPos; }
     float getParkingYaw() const { return parkingYaw; }
     
 
-    State setParkingPos(float minX, float maxX, float minY, float maxY);
+    Position2D setParkingPos(float minX, float maxX, float minY, float maxY);
     float setParkingYaw();
-    bool isParked(const State& carPos, float carYaw, const State& parkingPos, float parkingYaw);
+    bool isParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw);
 
     
 private:
@@ -79,14 +79,14 @@ private:
     VehicleState vehicleState{};            // current vehicle state
 
     // Parking lot attributes
-    State parkingPos{0.0f, 0.0f};          // parking lot position
+    Position2D parkingPos{0.0f, 0.0f};          // parking lot position
     float parkingYaw{0.0f};                 // parking lot yaw
 
     Randomizer* randomizer{nullptr};
     BicycleModel* bicycleModel{nullptr};
 
-    State worldToSlot(const State& carPos, const State& slotPos, float slotYaw);
-    bool isParkedAtCenter(const State& carPos, const float carYaw, const State& parkingPos, const float& parkingYaw);
+    Position2D worldToSlot(const Position2D& carPos, const Position2D& slotPos, float slotYaw);
+    bool isParkedAtCenter(const Position2D& carPos, const float carYaw, const Position2D& parkingPos, const float& parkingYaw);
  
 };
 #endif

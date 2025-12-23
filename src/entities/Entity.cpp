@@ -22,7 +22,7 @@ const std::array<float, 4>& Entity::getColor() const noexcept { return color; }
 
 // setter
 // ------------------------------------------------------------------------
-void Entity::setPos(const State& newPos) { pos_m = newPos;}
+void Entity::setPos(const Position2D& newPos) { pos_m = newPos;}
 void Entity::setYaw(const float newYaw) { yaw = newYaw;}
 void Entity::setWidth(const float newWidth) { width_m = newWidth; }
 void Entity::setLength(const float newLength) { length_m = newLength; }

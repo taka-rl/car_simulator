@@ -67,8 +67,8 @@ private:
     const double simDt{0.01};
     double accumulator{0.0};
     double lastTime{0.0};
-    State prevState{};
-    State curState{};
+    Position2D prevState{};
+    Position2D curState{};
     float prevPsi{0.0f};
     float curPsi{0.0f};
     float prevDelta{0.0f};
@@ -79,7 +79,7 @@ private:
     void initEntities();         // car / parking / wheels / trajectory
 
     void placeWheel(Entity& wheel, float ax, float ay, bool front,
-                    const State& pos, const float& yawDraw, const float& steer);
+                    const Position2D& pos, const float& yawDraw, const float& steer);
 
     /** Step simulation
      * one frame: input → env steps → update Entities → render.
@@ -106,9 +106,9 @@ private:
     // Linear interpolation for positions
     inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 
-    // Interpolate state (positions); for headings, use lerpAngle on psi
-    inline State interp(const State& prev, const State& curr, float alpha) {
-        return State{
+    // Interpolate Position2D (positions); for headings, use lerpAngle on psi
+    inline Position2D interp(const Position2D& prev, const Position2D& curr, float alpha) {
+        return Position2D{
             lerp(prev.x, curr.x, alpha),
             lerp(prev.y, curr.y, alpha)
         };
@@ -116,7 +116,7 @@ private:
 
     // keep the entire rectangle visible on screen.
     // ------------------------------------------------------------------------
-    inline void keepOnScreenMeters(State& s, float width_m, float length_m, int fbW, int fbH, float ppm) {
+    inline void keepOnScreenMeters(Position2D& s, float width_m, float length_m, int fbW, int fbH, float ppm) {
         const float worldHalfW = (fbW / ppm) * 0.5f;
         const float worldHalfH = (fbH / ppm) * 0.5f;
         const float marginX = width_m * 0.5f;

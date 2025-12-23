@@ -3,8 +3,8 @@
 
 #include "../core/Config.h"
 
-
-struct State { float x, y; };
+// rename State to Position2D to avoid confusion. 
+struct Position2D { float x, y; };
 
 struct Action {
     float acceleration{0.0f};
@@ -12,7 +12,7 @@ struct Action {
 };
 
 struct VehicleState {
-    State pos{0.0f, 0.0f};
+    Position2D pos{0.0f, 0.0f};
     float psi{0.0f};
     float velocity{0.0f};
     float delta{0.0f};

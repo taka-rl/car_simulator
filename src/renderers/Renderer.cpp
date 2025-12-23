@@ -17,8 +17,9 @@ void Renderer::draw(const Entity& e) const {
     e.rectShader->use();
 
     // 2. convert meters to NDC
-    const State ndcPos = metersToNDC(e.getPosX(), e.getPosY());
-    const State ndcSize = rectSizeToNDC(e.getWidth(), e.getLength());
+    const Position2D ndcPos = metersToNDC(e.getPosX(), e.getPosY());
+
+    const Position2D ndcSize = rectSizeToNDC(e.getWidth(), e.getLength());
 
     e.rectShader->setOffset(ndcPos.x, ndcPos.y);
     e.rectShader->setYaw(e.getYaw());
@@ -34,18 +35,21 @@ void Renderer::draw(const Entity& e) const {
 
 // converts a point (the object center in meters) into an NDC position for uOffset
 // ------------------------------------------------------------------------
-State Renderer::metersToNDC(float x_m, float y_m) const {
+Position2D Renderer::metersToNDC(float x_m, float y_m) const {
     const float Wm = fbW / ppm, Hm = fbH / ppm;
-    return State{ 
+    return Position2D{ 
         x_m / (Wm * 0.5f),
         y_m / (Hm * 0.5f)
     };
 };
 
+
+// Position2D Renderer::rectSizeToNDC(float length_m, float width_m) const {
+//     return Position2D{ 2.0f * length_m * ppm / fbW, 2.0f * width_m  * ppm / fbH };}
 // convcrts a full size (meters) into an NDC full size. for uScale
 // ------------------------------------------------------------------------
-State Renderer::rectSizeToNDC(float width_m, float length_m) const {
-    return State{ 
+Position2D Renderer::rectSizeToNDC(float width_m, float length_m) const {
+    return Position2D{ 
         (2.0f * width_m * ppm / fbW), 
         (2.0f * length_m * ppm / fbH)
     };

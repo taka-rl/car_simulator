@@ -14,10 +14,10 @@ Observation ParkingEnv::step(Action&action, const float& simDt) {
 
     return Observation { 
         {
-            State{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
-            State{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
-            State{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}, 
-            State{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}
+            Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
+            Position2D{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
+            Position2D{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}, 
+            Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}
         },
         vehicleState
     };
@@ -27,19 +27,19 @@ Observation ParkingEnv::step(Action&action, const float& simDt) {
 // ------------------------------------------------------------------------
 void ParkingEnv::reset() {
     // random positions and yaw for parking
-    const State randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);  // temporary values
+    const Position2D randParkingPos = setParkingPos(-15.f, 15.f, -10.f, 10.f);  // temporary values
     parkingPos = randParkingPos;
     parkingYaw = setParkingYaw();
 
     // random positions and yaw for car
     const float marginX = randomizer->randFloat(-5.0, 5.0), marginY = randomizer->randFloat(-5.0, 5.0);
-    const State randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
+    const Position2D randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
 
     // calculate each corner of the parking lot relative to the car position
-    const State relCorner1 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
-    const State relCorner2 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
-    const State relCorner3 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
-    const State relCorner4 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
+    const Position2D relCorner1 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
+    const Position2D relCorner2 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
+    const Position2D relCorner3 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
+    const Position2D relCorner4 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
 
     // set observation
     vehicleState.pos = randCarPos;
@@ -49,8 +49,8 @@ void ParkingEnv::reset() {
 
     observation.vehicleState = vehicleState;
     observation.distCorners = {
-        State{relCorner1.x - randCarPos.x, relCorner1.y - randCarPos.y}, State{relCorner2.x - randCarPos.x, relCorner2.y - randCarPos.y}, 
-        State{relCorner3.x - randCarPos.x, relCorner3.y - randCarPos.y}, State{relCorner4.x - randCarPos.x, relCorner4.y - randCarPos.y}
+        Position2D{relCorner1.x - randCarPos.x, relCorner1.y - randCarPos.y}, Position2D{relCorner2.x - randCarPos.x, relCorner2.y - randCarPos.y}, 
+        Position2D{relCorner3.x - randCarPos.x, relCorner3.y - randCarPos.y}, Position2D{relCorner4.x - randCarPos.x, relCorner4.y - randCarPos.y}
     };
 
 }
@@ -67,7 +67,7 @@ float ParkingEnv::reward() {
 
 // set the parking lot location randomly
 // ------------------------------------------------------------------------
-State ParkingEnv::setParkingPos(float minX, float maxX, float minY, float maxY) {
+Position2D ParkingEnv::setParkingPos(float minX, float maxX, float minY, float maxY) {
     float x = randomizer->randFloat(minX, maxX);
     float y = randomizer->randFloat(minY, maxY);
     return {x, y};
@@ -83,14 +83,14 @@ float ParkingEnv::setParkingYaw() {
 
 // rotate car poistion into the parking lot frame
 // ------------------------------------------------------------------------
-State ParkingEnv::worldToSlot(const State& carPos, const State& slotPos, float slotYaw) {
+Position2D ParkingEnv::worldToSlot(const Position2D& carPos, const Position2D& slotPos, float slotYaw) {
     const float dx = carPos.x - slotPos.x;
     const float dy = carPos.y - slotPos.y;
 
     const float c = cosf(slotYaw);
     const float s = sinf(slotYaw);
 
-    return State{
+    return Position2D{
         c * dx + s * dy,
         -s * dx + c * dy
     };
@@ -123,10 +123,10 @@ State ParkingEnv::worldToSlot(const State& carPos, const State& slotPos, float s
  *         lateral tolerances of the parking slot center (posOk).
  *         false otherwise.
  */
-bool ParkingEnv::isParkedAtCenter(const State& carPos, const float carYaw, const State& parkingPos, const float& parkingYaw) {
+bool ParkingEnv::isParkedAtCenter(const Position2D& carPos, const float carYaw, const Position2D& parkingPos, const float& parkingYaw) {
 
     // car center in slot frame
-    State rel = worldToSlot(carPos, parkingPos, parkingYaw);
+    Position2D rel = worldToSlot(carPos, parkingPos, parkingYaw);
 
     // heading error in slot frame
     const float psiRel = wrapPi(carYaw - parkingYaw);
@@ -203,7 +203,7 @@ bool ParkingEnv::isParkedAtCenter(const State& carPos, const float carYaw, const
  * @return true if all four car corners are inside the parking slot rectangle
  *         in the slot frame; false otherwise.
  */
-bool ParkingEnv::isParked(const State& carPos, float carYaw, const State& parkingPos, float parkingYaw) {
+bool ParkingEnv::isParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw) {
 
     // This code will be used for RL
     // return false if the car is not at the center of the parking lot
@@ -228,7 +228,7 @@ bool ParkingEnv::isParked(const State& carPos, float carYaw, const State& parkin
     // Rotate world -> slot frame
     // [ X_slot ]   [  cos  sin ] [ dx ]
     // [ Y_slot ] = [ -sin  cos ] [ dy ]
-    State rel;
+    Position2D rel;
     rel.x =  cSlot * dx + sSlot * dy;  // along slot length
     rel.y = -sSlot * dx + cSlot * dy;  // along slot width
 
@@ -239,7 +239,7 @@ bool ParkingEnv::isParked(const State& carPos, float carYaw, const State& parkin
 
     // Car corners in *car* local frame (x forward, y left)
     // Four corners: (±halfLen, ±halfWid)
-    std::array<State, 4> carLocalCorners = {{
+    std::array<Position2D, 4> carLocalCorners = {{
         { +halfCarLen, +halfCarWid },
         { +halfCarLen, -halfCarWid },
         { -halfCarLen, -halfCarWid },
