@@ -23,7 +23,7 @@ namespace {
 
 // constructor
 Simulator::Simulator(GLFWwindow* window) : 
-    window(window), randomizer(), bicycleModel(vehicleParams.Lf + vehicleParams.Lr), env(&randomizer, &bicycleModel),  
+    window(window), randomizer(), env(&randomizer),  
     carEntity(quad.get(), rectShader.get()), parkingEntity(quad.get(), rectShader.get()), 
     wheelFL(quad.get(), rectShader.get()), wheelFR(quad.get(), rectShader.get()),
     wheelRL(quad.get(), rectShader.get()), wheelRR(quad.get(), rectShader.get()) {};
@@ -54,10 +54,14 @@ void Simulator::initRenderer() {
 
     // renderer
     renderer = std::make_unique<Renderer>(PPM, fbW, fbH);
-
 }
 
+// initialize simulation state: env, vehicle params
+// ------------------------------------------------------------------------
 void Simulator::initSimulationState() {
+    // reset the environment
+    env.reset();
+    
     // wheels
     vehicleParams.finalize();
 
@@ -69,23 +73,17 @@ void Simulator::initSimulationState() {
         {-vehicleParams.Lr, +vehicleParams.track*0.5f}
     }};
 
-    // previous and current Position2D for interpolation
+    // previous and current state for interpolation
     prevState = env.getVehicleState().pos;
     prevPsi = env.getVehicleState().psi;
     curState = env.getVehicleState().pos;
     curPsi = env.getVehicleState().psi;
     curDelta = env.getVehicleState().delta;
-
-    // kinematic model
-    bicycleModel = BicycleModel(vehicleParams.Lf + vehicleParams.Lr);
 }
 
 // initialize entities: car, parking lot, wheels and trajectory
 // ------------------------------------------------------------------------
 void Simulator::initEntities() {   
-    // reset the environment
-    env.reset();
-
     // entities
     const VehicleState vehicleState = env.getVehicleState();
     carEntity = Entity(quad.get(), rectShader.get());

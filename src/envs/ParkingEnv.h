@@ -35,7 +35,7 @@ class ParkingEnv {
 public:
     // constructor
     // ------------------------------------------------------------------------
-    ParkingEnv(Randomizer* randomizer, BicycleModel* bicycleModel);
+    ParkingEnv(Randomizer* randomizer);
 
     /** 
      * Step the environment by one time step, given an action, advance the world
@@ -79,11 +79,11 @@ private:
     VehicleState vehicleState{};            // current vehicle state
 
     // Parking lot attributes
-    Position2D parkingPos{0.0f, 0.0f};          // parking lot position
+    Position2D parkingPos{0.0f, 0.0f};      // parking lot position
     float parkingYaw{0.0f};                 // parking lot yaw
 
     Randomizer* randomizer{nullptr};
-    BicycleModel* bicycleModel{nullptr};
+    BicycleModel bicycleModel{CAR_LENGTH};
 
     Position2D worldToSlot(const Position2D& carPos, const Position2D& slotPos, float slotYaw);
     bool isParkedAtCenter(const Position2D& carPos, const float carYaw, const Position2D& parkingPos, const float& parkingYaw);

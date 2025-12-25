@@ -46,7 +46,6 @@ private:
 
     // Core systems
     VehicleParams vehicleParams;
-    BicycleModel bicycleModel;
     Randomizer randomizer;
     ParkingEnv env;
     Action action;

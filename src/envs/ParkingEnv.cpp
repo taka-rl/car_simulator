@@ -1,17 +1,18 @@
 #include "ParkingEnv.h"
 
 // constructor
-ParkingEnv::ParkingEnv(Randomizer* randomizer, BicycleModel* bicycleModel) : randomizer(randomizer), bicycleModel(bicycleModel){};
+ParkingEnv::ParkingEnv(Randomizer* randomizer) : randomizer(randomizer){};
 
 
 Observation ParkingEnv::step(Action&action, const float& simDt) {
 
     // apply the action using bicycle model
-    bicycleModel->kinematicAct(action, vehicleState, simDt);
+    bicycleModel.kinematicAct(action, vehicleState, simDt);
 
     // reward calculation
     rewardValue = reward();
 
+    // todo: Observation should be calculated for the relative coordinate system of the car from the parking lot corners to the center of the car
     return Observation { 
         {
             Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
