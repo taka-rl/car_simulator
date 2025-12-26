@@ -213,27 +213,7 @@ void Simulator::run() {
 
         // render
         // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw entities
-        renderer->draw(parkingEntity);
-        renderer->draw(carEntity);
-
-        placeWheel(wheelFL, anchors[0][0], anchors[0][1], true, posDraw, yawDraw, deltaDraw);
-        placeWheel(wheelFR, anchors[1][0], anchors[1][1], true, posDraw, yawDraw, deltaDraw);
-        placeWheel(wheelRR, anchors[2][0], anchors[2][1], false, posDraw, yawDraw, 0.0f);
-        placeWheel(wheelRL, anchors[3][0], anchors[3][1], false, posDraw, yawDraw, 0.0f);
-            
-        renderer->draw(wheelFL);
-        renderer->draw(wheelFR);
-        renderer->draw(wheelRR);
-        renderer->draw(wheelRL);
-
-        // draw trajectory
-        for (auto& seg : trajectoryEntities) {
-            renderer->draw(seg);
-        }
+        draw(posDraw, yawDraw, deltaDraw);
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -247,8 +227,30 @@ void Simulator::tick() {
     // updated later 
 }
 
-void Simulator::draw() {
-    // updated later
+// draw all entities
+// ------------------------------------------------------------------------
+void Simulator::draw(const Position2D& posDraw, const float& yawDraw, const float& deltaDraw) {
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // draw entities
+    renderer->draw(parkingEntity);
+    renderer->draw(carEntity);
+
+    placeWheel(wheelFL, anchors[0][0], anchors[0][1], true, posDraw, yawDraw, deltaDraw);
+    placeWheel(wheelFR, anchors[1][0], anchors[1][1], true, posDraw, yawDraw, deltaDraw);
+    placeWheel(wheelRR, anchors[2][0], anchors[2][1], false, posDraw, yawDraw, 0.0f);
+    placeWheel(wheelRL, anchors[3][0], anchors[3][1], false, posDraw, yawDraw, 0.0f);
+        
+    renderer->draw(wheelFL);
+    renderer->draw(wheelFR);
+    renderer->draw(wheelRR);
+    renderer->draw(wheelRL);
+
+    // draw trajectory
+    for (auto& seg : trajectoryEntities) {
+        renderer->draw(seg);
+    }
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
