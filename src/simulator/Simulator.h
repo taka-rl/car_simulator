@@ -86,7 +86,7 @@ private:
     */ 
     void tick();
 
-    void draw(const Position2D& posDraw, const float& yawDraw, const float& deltaDraw);
+    void draw(const Position2D& posDraw, float yawDraw, float deltaDraw);
     
 
     // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly

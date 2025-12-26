@@ -151,26 +151,9 @@ void Simulator::run() {
         processInput(window, action);
     
         clampAccumulator(accumulator, simDt);
-
+        
         // fixed-step simulation
-        while (accumulator >= simDt) {
-            // set the privious Position2D
-            prevState = curState;
-            prevPsi = curPsi;
-            prevDelta = curDelta;
-            
-            // update Position2D
-            const float dt = static_cast<float>(simDt);
-            Observation obs = env.step(action, dt);
-
-            // set the current Position2D
-            curState = obs.vehicleState.pos;
-            curPsi = obs.vehicleState.psi;
-            curDelta  = obs.vehicleState.delta;
-
-            keepOnScreenMeters(obs.vehicleState.pos, carEntity.getWidth(), carEntity.getLength(),fbW, fbH, PPM);
-            accumulator -= simDt;
-        }
+        tick();
 
         // interpolate for smooth rendering
         float alpha = static_cast<float>(accumulator / simDt);
@@ -223,13 +206,33 @@ void Simulator::run() {
 
 }
 
+// step the simulation with fixed time step
+// ------------------------------------------------------------------------
 void Simulator::tick() {
-    // updated later 
+    while (accumulator >= simDt) {
+        // set the privious Position2D
+        prevState = curState;
+        prevPsi = curPsi;
+        prevDelta = curDelta;
+        
+        // update Position2D
+        const float dt = static_cast<float>(simDt);
+        Observation obs = env.step(action, dt);
+
+        // set the current Position2D
+        curState = obs.vehicleState.pos;
+        curPsi = obs.vehicleState.psi;
+        curDelta  = obs.vehicleState.delta;
+
+        // TODO: keepOnScreenMeters does not work well. Fix it later.
+        keepOnScreenMeters(obs.vehicleState.pos, carEntity.getWidth(), carEntity.getLength(),fbW, fbH, PPM);
+        accumulator -= simDt;
+    }
 }
 
 // draw all entities
 // ------------------------------------------------------------------------
-void Simulator::draw(const Position2D& posDraw, const float& yawDraw, const float& deltaDraw) {
+void Simulator::draw(const Position2D& posDraw, float yawDraw, float deltaDraw) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
