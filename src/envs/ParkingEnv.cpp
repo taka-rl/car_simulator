@@ -56,13 +56,20 @@ void ParkingEnv::reset() {
 
 }
 
+
+// return reward based on parking-success check
+// ------------------------------------------------------------------------
 float ParkingEnv::reward() {
     // check parking success
-    bool parkingSuccess = isParked({vehicleState.pos.x, vehicleState.pos.y}, vehicleState.psi, {parkingPos.x, parkingPos.y}, parkingYaw);
+    const bool parkingSuccess = isParked({vehicleState.pos.x, vehicleState.pos.y}, vehicleState.psi, {parkingPos.x, parkingPos.y}, parkingYaw);
     if (parkingSuccess) {
-        return 1.0f;
+        std::cout << "Parking Success " << "Reward: " << rewardValue << std::endl;
+        rewardValue = 1.0f;
+        return rewardValue;
     } else {
-        return 0.0f;
+        std::cout << "Parking fail " << "Reward: " << rewardValue << std::endl;
+        rewardValue = 0.0f;
+        return rewardValue;
     }
 }
 
@@ -263,12 +270,12 @@ bool ParkingEnv::isParked(const Position2D& carPos, float carYaw, const Position
 
         if (!insideX || !insideY) {
             // at least one corner is outside → not parked
-            std::cout << "Not parked" << std::endl;
+            // std::cout << "Not parked" << std::endl;
             return false;
         }
     }
 
     // all 4 corners are inside the slot box in slot frame → parked
-    std::cout << "Parked" << std::endl;
+    // std::cout << "Parked" << std::endl;
     return true;
 }

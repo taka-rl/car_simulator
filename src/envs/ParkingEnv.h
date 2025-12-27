@@ -38,20 +38,27 @@ public:
     ParkingEnv(Randomizer* randomizer);
 
     /** 
-     * Step the environment by one time step, given an action, advance the world
-     * by a fixed amount of simulated time, then return observation, reward, done, info.
-     * --------------------------------------------------------------------
+     * @brief Step the environment by one time step, given an action. 
+     * This function advance the world by a fixed amount of simulated time, 
+     * then return observation for now. (reward, done, info, etc will be added later).
+     * 
      * @return Observation
      */
     Observation step(Action&action, const float& simDt);
     
     /**
-     * Reset the environment to an initial state and return observation.
-     * --------------------------------------------------------------------
+     * @brief Reset the environment to an initial state and return observation.
+     * 
      * @return Observation
      * 
     */
     void reset();
+
+    /**
+     * @brief Return reward based on parking-success check
+     * 
+     * @return float
+     */
     float reward();
 
     // getter 
@@ -60,11 +67,6 @@ public:
     Position2D getParkingPos() const { return parkingPos; }
     float getParkingYaw() const { return parkingYaw; }
     
-
-    Position2D setParkingPos(float minX, float maxX, float minY, float maxY);
-    float setParkingYaw();
-    bool isParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw);
-
     
 private:
     // RL attributes
@@ -85,7 +87,15 @@ private:
     Randomizer* randomizer{nullptr};
     BicycleModel bicycleModel{CAR_LENGTH};
 
+    // helper functions
+    Position2D setParkingPos(float minX, float maxX, float minY, float maxY);
+    float setParkingYaw();
+
+    // transform car position into the parking lot frame
     Position2D worldToSlot(const Position2D& carPos, const Position2D& slotPos, float slotYaw);
+
+    // parking check functions
+    bool isParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw);
     bool isParkedAtCenter(const Position2D& carPos, const float carYaw, const Position2D& parkingPos, const float& parkingYaw);
  
 };

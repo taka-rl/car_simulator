@@ -80,13 +80,29 @@ private:
     void placeWheel(Entity& wheel, float ax, float ay, bool front,
                     const Position2D& pos, const float& yawDraw, const float& steer);
 
-    /** Step simulation
+    /** 
+     * @brief Advance the simulation by fixed time step
+     * This function advances the simulation by a fixed time
+     * 
      * one frame: input → env steps → update Entities → render.
-
+     * 
+     * @return void
     */ 
     void tick();
-
-    void draw(const Position2D& posDraw, float yawDraw, float deltaDraw);
+    /** 
+     * @brief Draw all entities including interpolation factor
+     * 
+     * This function draws all entites with interpolation for smooth rendering and Renderer class. 
+     * 
+     * 1. Calculate interpolation factor alpha from accumulator and simDt
+     * 2. Interpolate position, yaw, delta using alpha
+     * 3. Set interpolated pos and yaw to car entity
+     * 4. Update and store trajectory line segments
+     * 5. Render all entities
+     * 
+     * @return void 
+     */
+    void draw();
     
 
     // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly

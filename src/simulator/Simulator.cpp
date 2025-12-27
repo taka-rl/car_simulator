@@ -155,48 +155,8 @@ void Simulator::run() {
         // fixed-step simulation
         tick();
 
-        // interpolate for smooth rendering
-        float alpha = static_cast<float>(accumulator / simDt);
-        const Position2D posDraw = interp(prevState, curState, alpha);
-        const float yawDraw = lerpAngle(prevPsi, curPsi, alpha);
-        const float deltaDraw = prevDelta + (curDelta - prevDelta) * alpha;
-
-        // set pos and yaw to draw the car
-        carEntity.setPos(posDraw);
-        carEntity.setYaw(yawDraw);
-
-        // trajectory
-        // calculate the distance between two points
-        float dx = curState.x - prevState.x;
-        float dy = curState.y - prevState.y;
-        float len = std::sqrt(dx*dx + dy*dy);
-        
-        // ignore small movement
-        const float minSegLen = 0.01f;   // 1 cm
-        if (len > minSegLen) {
-            // center of the segment
-            Position2D center{
-                0.5f * (prevState.x + curState.x),
-                0.5f * (prevState.y + curState.y)
-            };
-
-        // yaw of the segment
-        float segYaw = std::atan2(dy, dx);
-
-        Entity seg(quad.get(), rectShader.get());
-        seg.setPos(center);
-        seg.setWidth(0.05f);
-        seg.setLength(len);
-        seg.setYaw(segYaw);
-        seg.setColor({0.9f, 0.9f, 0.2f, 1.0f});
-
-        trajectoryEntities.push_back(seg);
-
-        };
-
-        // render
-        // ------
-        draw(posDraw, yawDraw, deltaDraw);
+        // draw including interpolation factor
+        draw();
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -230,9 +190,50 @@ void Simulator::tick() {
     }
 }
 
-// draw all entities
+// draw all entities including interpolation
 // ------------------------------------------------------------------------
-void Simulator::draw(const Position2D& posDraw, float yawDraw, float deltaDraw) {
+void Simulator::draw() {
+    // interpolate for smooth rendering
+    float alpha = static_cast<float>(accumulator / simDt);
+    const Position2D posDraw = interp(prevState, curState, alpha);
+    const float yawDraw = lerpAngle(prevPsi, curPsi, alpha);
+    const float deltaDraw = prevDelta + (curDelta - prevDelta) * alpha;
+
+    // set pos and yaw to draw the car
+    carEntity.setPos(posDraw);
+    carEntity.setYaw(yawDraw);
+
+    // trajectory
+    // calculate the distance between two points
+    float dx = curState.x - prevState.x;
+    float dy = curState.y - prevState.y;
+    float len = std::sqrt(dx*dx + dy*dy);
+    
+    // ignore small movement
+    const float minSegLen = 0.01f;   // 1 cm
+    if (len > minSegLen) {
+        // center of the segment
+        Position2D center{
+            0.5f * (prevState.x + curState.x),
+            0.5f * (prevState.y + curState.y)
+        };
+
+    // yaw of the segment
+    float segYaw = std::atan2(dy, dx);
+
+    Entity seg(quad.get(), rectShader.get());
+    seg.setPos(center);
+    seg.setWidth(0.05f);
+    seg.setLength(len);
+    seg.setYaw(segYaw);
+    seg.setColor({0.9f, 0.9f, 0.2f, 1.0f});
+
+    trajectoryEntities.push_back(seg);
+
+    };
+
+    // render
+    // ------
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
