@@ -13,17 +13,18 @@ Observation ParkingEnv::step(Action&action, const float& simDt) {
     rewardValue = reward();
 
     // todo: Observation should be calculated for the relative coordinate system of the car from the parking lot corners to the center of the car
-    return Observation { 
-        {
+    observation = Observation{
+        .distCorners = {
             Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
             Position2D{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
             Position2D{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}, 
             Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}
         },
-        vehicleState
+        .vehicleState = vehicleState
     };
-    
+    return observation;
 }
+
 // reset the environement to initial state
 // ------------------------------------------------------------------------
 void ParkingEnv::reset() {

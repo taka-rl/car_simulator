@@ -56,9 +56,12 @@ private:
     std::unique_ptr<Renderer> renderer;
 
     // Scene entities
-    Entity carEntity;
-    Entity parkingEntity;
-    Entity wheelFL, wheelFR, wheelRL, wheelRR;
+    Entity carEntity = Entity(quad.get(), rectShader.get());
+    Entity parkingEntity = Entity(quad.get(), rectShader.get());
+    Entity wheelFL = Entity(quad.get(), rectShader.get());
+    Entity wheelFR = Entity(quad.get(), rectShader.get());
+    Entity wheelRL = Entity(quad.get(), rectShader.get());
+    Entity wheelRR = Entity(quad.get(), rectShader.get());
     std::vector<Entity> trajectoryEntities;
     std::array<std::array<float, 2>, 4> anchors;
 

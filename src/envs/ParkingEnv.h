@@ -22,7 +22,7 @@ struct Action;
 
 // observation structure
 struct Observation {
-    std::array<std::array<Position2D, 1>, 4> distCorners;  // the relative coordinate system of the car from the parking lot corners to the center of the car
+    std::array<Position2D, 4> distCorners;  // the relative coordinate system of the car from the parking lot corners to the center of the car
     VehicleState vehicleState;
 };
 

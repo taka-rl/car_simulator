@@ -22,11 +22,7 @@ namespace {
 
 
 // constructor
-Simulator::Simulator(GLFWwindow* window) : 
-    window(window), randomizer(), env(&randomizer),  
-    carEntity(quad.get(), rectShader.get()), parkingEntity(quad.get(), rectShader.get()), 
-    wheelFL(quad.get(), rectShader.get()), wheelFR(quad.get(), rectShader.get()),
-    wheelRL(quad.get(), rectShader.get()), wheelRR(quad.get(), rectShader.get()) {};
+Simulator::Simulator(GLFWwindow* window) : window(window), randomizer(), env(&randomizer) {};
 
 bool Simulator::init() {
     initRenderer();
@@ -76,9 +72,14 @@ void Simulator::initSimulationState() {
     // previous and current state for interpolation
     prevState = env.getVehicleState().pos;
     prevPsi = env.getVehicleState().psi;
+    prevDelta = env.getVehicleState().delta;
     curState = env.getVehicleState().pos;
     curPsi = env.getVehicleState().psi;
     curDelta = env.getVehicleState().delta;
+
+    // timing
+    lastTime = glfwGetTime();
+    accumulator = 0.0;
 }
 
 // initialize entities: car, parking lot, wheels and trajectory
