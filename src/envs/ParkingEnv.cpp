@@ -14,12 +14,7 @@ Observation ParkingEnv::step(Action&action, const float& simDt) {
 
     // todo: Observation should be calculated for the relative coordinate system of the car from the parking lot corners to the center of the car
     observation = Observation{
-        .distCorners = {
-            Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
-            Position2D{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y + 5.0f - vehicleState.pos.y}, 
-            Position2D{parkingPos.x - 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}, 
-            Position2D{parkingPos.x + 5.0f - vehicleState.pos.x, parkingPos.y - 5.0f - vehicleState.pos.y}
-        },
+        .distCorners = calculateRelCorners(vehicleState.pos, vehicleState.psi, parkingPos, parkingYaw),
         .vehicleState = vehicleState
     };
     return observation;
@@ -37,39 +32,31 @@ void ParkingEnv::reset() {
     const float marginX = randomizer->randFloat(-5.0, 5.0), marginY = randomizer->randFloat(-5.0, 5.0);
     const Position2D randCarPos = {randParkingPos.x + marginX, randParkingPos.y + marginY};
 
-    // calculate each corner of the parking lot relative to the car position
-    const Position2D relCorner1 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
-    const Position2D relCorner2 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y + 5.0f}, randParkingPos, parkingYaw);
-    const Position2D relCorner3 = worldToSlot({randParkingPos.x - 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
-    const Position2D relCorner4 = worldToSlot({randParkingPos.x + 5.0f, randParkingPos.y - 5.0f}, randParkingPos, parkingYaw);
-
-    // set observation
+    // set observation of the car state
     vehicleState.pos = randCarPos;
     vehicleState.psi = 0.0f;
     vehicleState.velocity = 0.0f;
     vehicleState.delta = 0.0f;
-
     observation.vehicleState = vehicleState;
-    observation.distCorners = {
-        Position2D{relCorner1.x - randCarPos.x, relCorner1.y - randCarPos.y}, Position2D{relCorner2.x - randCarPos.x, relCorner2.y - randCarPos.y}, 
-        Position2D{relCorner3.x - randCarPos.x, relCorner3.y - randCarPos.y}, Position2D{relCorner4.x - randCarPos.x, relCorner4.y - randCarPos.y}
-    };
 
+    // set observation of the parking lot corners relative to the car position
+    observation.distCorners = calculateRelCorners(randCarPos, vehicleState.psi, parkingPos, parkingYaw);
 }
-
 
 // return reward based on parking-success check
 // ------------------------------------------------------------------------
 float ParkingEnv::reward() {
     // check parking success
     const bool parkingSuccess = isParked({vehicleState.pos.x, vehicleState.pos.y}, vehicleState.psi, {parkingPos.x, parkingPos.y}, parkingYaw);
+
+    // TODO: reward shaping can be added here later
     if (parkingSuccess) {
-        std::cout << "Parking Success " << "Reward: " << rewardValue << std::endl;
         rewardValue = 1.0f;
+        // std::cout << "Parking Success " << "Reward: " << rewardValue << std::endl;
         return rewardValue;
     } else {
-        std::cout << "Parking fail " << "Reward: " << rewardValue << std::endl;
         rewardValue = 0.0f;
+        //std::cout << "Parking fail " << "Reward: " << rewardValue << std::endl;
         return rewardValue;
     }
 }
@@ -104,6 +91,67 @@ Position2D ParkingEnv::worldToSlot(const Position2D& carPos, const Position2D& s
         -s * dx + c * dy
     };
 }
+
+// transform global coordinate to local(car) coordinate system
+// ------------------------------------------------------------------------
+Position2D ParkingEnv::worldToCar(float x, float y, const Position2D carPos, float heading) {
+    // Translate the point to the new origin
+    x -= carPos.x;
+    y -= carPos.y;
+
+    // Rotate the point based on the heading
+    // float angle = heading + PI * 0.5f;
+    const float c = cosf(-heading);
+    const float s = sinf(-heading);
+
+    return Position2D{ x * c - y * s, x * s + y * c };
+}
+
+// rotate a vector counter-clockwise by yaw angle
+// ------------------------------------------------------------------------
+Position2D ParkingEnv::rotateCCW(const Position2D& vec, float yaw) {
+    const float c = cosf(yaw);
+    const float s = sinf(yaw);
+    return Position2D{ vec.x * c - vec.y * s, vec.x * s + vec.y * c };
+}
+
+// calculate the local coordinate system of the car from the parking lot corners to the center of the car
+// ------------------------------------------------------------------------
+std::array<Position2D, 4> ParkingEnv::calculateRelCorners(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw) {
+
+    // 1: Define the parking lot corners in the parking slot frame
+    const float halfLen = PARKING_LENGTH * 0.5f;
+    const float halfWid = PARKING_WIDTH  * 0.5f;
+
+    const std::array<Position2D, 4> cornerSlot = { 
+        Position2D{ halfWid,  halfLen},  // corner 1: front-right
+        Position2D{-halfWid,  halfLen},  // corner 2: front-left
+        Position2D{-halfWid, -halfLen},  // corner 3: rear-left
+        Position2D{ halfWid, -halfLen}   // corner 4: rear-right
+    };
+
+    std::array<Position2D, 4> carFrameCorners;
+    for (int i = 0; i < 4; ++i) {
+        // 2: Rotate/translate them into the world frame
+        const Position2D cornerWorld = parkingPos + rotateCCW(cornerSlot[i], parkingYaw);
+
+        // debug
+        std::cout << "Corner " << (i + 1) << " in world frame: "
+                  << "(" << cornerWorld.x << ", " << cornerWorld.y << ")\n";
+        
+        // 3: Transform them into the car frame
+        carFrameCorners[i] = worldToCar(cornerWorld.x, cornerWorld.y, carPos, carYaw);
+    }
+    // debug
+    std::cout << "Car frame corners: "
+              << "(" << carFrameCorners[0].x << ", " << carFrameCorners[0].y << "), "
+              << "(" << carFrameCorners[1].x << ", " << carFrameCorners[1].y << "), "
+              << "(" << carFrameCorners[2].x << ", " << carFrameCorners[2].y << "), "
+              << "(" << carFrameCorners[3].x << ", " << carFrameCorners[3].y << ")\n";
+
+    return carFrameCorners;
+}
+
 
 /**
  * @brief Check if the car is roughly centered and aligned in the parking slot (slot-frame check).

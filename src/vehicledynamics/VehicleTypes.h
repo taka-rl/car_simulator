@@ -6,6 +6,10 @@
 // rename State to Position2D to avoid confusion. 
 struct Position2D { float x, y; };
 
+inline Position2D operator+(const Position2D& a, const Position2D& b) {
+    return Position2D{a.x + b.x, a.y + b.y};
+}
+
 struct Action {
     float acceleration{0.0f};
     float steeringAngle{0.0f};
