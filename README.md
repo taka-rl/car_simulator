@@ -39,7 +39,7 @@ Combined actions (e.g. accelerate + steer) are possible.
 ### Build command
 - without CMake
 ```cmd
-g++ -std=c++17 src/glad.c src/main.cpp src/Window.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp src/utilities/Randomizer.cpp src/simulator/Simulator.cpp -o output/program -Llib -Iinclude -lglfw3dll
+g++ -std=c++17 src/glad.c src/main.cpp src/Window.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp src/utilities/Randomizer.cpp src/simulator/Simulator.cpp src/envs/ParkingEnv.cpp -o output/program -Llib -Iinclude -lglfw3dll
 ```
 - CMake
 1. Configure & Generate Build Files
@@ -68,7 +68,7 @@ cmake --build build --config Release
 ### Simulation environment
 - [ ] Introduce reinforcement learning for the parking
     - [ ] Research RL libraries for C++
-    - [ ] Build an environment like gymnasium-style environment in Python
+    - [X] Build an environment like gymnasium-style environment in Python
     - [ ] Introduce continuous action space
     - [ ] Implement RL
     - [ ] Training

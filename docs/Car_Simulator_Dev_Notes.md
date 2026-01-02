@@ -169,7 +169,7 @@ One step forward:
 
 `ParkingEnv` is designed as a Gym‑style environment (in progress):
 - `reset()` : sample parking slot pose + reset car pose
-- `step(action)` : apply an action, update state, compute reward, termination
+- `step(action, simDt)` : apply an action, update state, compute reward, termination
 - `reward()` : compute shaping / sparse reward (TBD)
 
 ### Parking pose randomization
@@ -183,6 +183,65 @@ A robust check uses the slot coordinate frame:
 2. compute heading error: `psiRel = wrapPi(carYaw - slotYaw)`
 3. check tolerances: `|rel.x|`, `|rel.y|`, `|psiRel|`
 
+### Global coordinate system to local coordinate system of the car
+This section the coordinate of the parking space corner points is introduced. It is the transformed coordinate system from the global coordindate system to the local coordinate system. In global coordinate systems, the car must account for its own position and orientation within the global frame, complicating calculations. 
+Expressing a global coordinate system as a local coordinate system simplifies the representation, making it easier to manage and understand. 
+In the local coordinate system, the front side of the car is positive along the y-axis, and the right side of the car is position along the x-axie.
+
+
+#### Frames (used in this transform)
+| Frame | Description |
+|---|---|
+|**World frame** | +X right, +Y up. Angles (yaw) are **CCW-positive** |
+|**Slot frame** | origin at the parking slot center. +x = slot “right”, +y = slot “forward” (aligned with `slotYaw`) |
+|**Car observation frame** (for `Observation.distCorners`) | origin at the car center. **+x = car right**, **+y = car forward** |
+
+
+#### Step-by-step transform (slot corners → world → car)
+Let:
+- `parkingPos = (xs, ys)`, `slotYaw = θs`
+- `carPos  = (xc, yc)`, `carYaw  = ψ`
+- `halfWid = PARKING_WIDTH / 2`, `halfLen = PARKING_LENGTH / 2`
+
+**1) Define the 4 corners in the slot frame**
+(ordered: front-right, front-left, rear-left, rear-right)
+
+- `c0 = (+halfWid, +halfLen)`
+- `c1 = (-halfWid, +halfLen)`
+- `c2 = (-halfWid, -halfLen)`
+- `c3 = (+halfWid, -halfLen)`
+
+**2) Slot → World (rotate then translate)**
+Using the standard CCW rotation matrix:
+
+`R(θ) = [[cosθ, -sinθ], [sinθ, cosθ]]`
+
+`cornerWorld = slotPos + R(slotYaw) * cornerSlot`
+
+**3) World → Car observation frame**
+First translate to car origin:
+
+`d = cornerWorld - carPos = (dx, dy)`
+
+Then project onto the car’s **right** and **forward** unit vectors:
+
+- `forward = (cosψ, sinψ)`
+- `right   = (sinψ, -cosψ)`   (forward rotated -90°)
+
+So the car-local coordinates are:
+
+- `x_local = dot(d, right)   = dx*sinψ - dy*cosψ`
+- `y_local = dot(d, forward) = dx*cosψ + dy*sinψ`
+
+These `(x_local, y_local)` values are stored in `Observation.distCorners[i]`.
+
+#### Normalization (Will be added later for RL)
+To keep observations bounded, normalize by a chosen `maxDist` and clamp:
+
+- `x_norm = clamp(x_local / maxDist, -1, +1)`
+- `y_norm = clamp(y_local / maxDist, -1, +1)`
+
+`maxDist` should be a **task-stable** scale (e.g., half-diagonal of the parking region), not something that changes with window size.
 
 ---
 
@@ -214,3 +273,5 @@ Recommended solutions:
 ## CI process
 - [CI process](docs/CI_Process.md)
 
+## Troubleshooting
+- [Troubleshooting](docs/Troubleshooting.md)
