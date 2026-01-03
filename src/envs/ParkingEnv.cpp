@@ -14,9 +14,10 @@ Observation ParkingEnv::step(Action&action, const float& simDt) {
 
     // todo: Observation should be calculated for the relative coordinate system of the car from the parking lot corners to the center of the car
     observation = Observation{
-        .distCorners = calculateRelCorners(vehicleState.pos, vehicleState.psi, parkingPos, parkingYaw),
-        .vehicleState = vehicleState
+        calculateRelCorners(vehicleState.pos, vehicleState.psi, parkingPos, parkingYaw),
+        vehicleState
     };
+    
     return observation;
 }
 
