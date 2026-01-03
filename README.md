@@ -3,6 +3,15 @@
 ## Overview
 Top-down 2D car simulator: **car body + 4 wheels**, meters-first physics with a **fixed timestep**, and smooth rendering via a single **unit-quad** mesh and a **RectShader** (scale → rotate → translate).
 
+## Features
+- Real-time 2D rendering (unit quad mesh + shader: scale → rotate → translate)
+- Kinematic bicycle model (meters + radians)
+- Discrete action space (combined accelerate + steer)
+- Parking environment scaffolding (for future RL)
+- CMake build + optional tests
+- CI workflow (GitHub Actions)
+
+---
 
 ## Simulation Environment
 OS Windows 10
@@ -26,19 +35,11 @@ Combined actions (e.g. accelerate + steer) are possible.
 | Escape | Quit |
 
 
-## Documentation
-- Folder structure 
-Refer to [this page](https://github.com/taka-rl/car_simulator/docs/folder_structure.md)
-
-- Development Note
-Refer to [this page](https://github.com/taka-rl/car_simulator/docs/Car_Simulator_Dev_Notes.md)
-
 ## Build setting
-
 ### Build command
 - without CMake
 ```cmd
-g++ -std=c++17 src/glad.c src/main.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp -o output/program -Llib -Iinclude -lglfw3dll
+g++ -std=c++17 src/glad.c src/main.cpp src/Window.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp src/utilities/Randomizer.cpp src/simulator/Simulator.cpp src/envs/ParkingEnv.cpp -o output/program -Llib -Iinclude -lglfw3dll
 ```
 - CMake
 1. Configure & Generate Build Files
@@ -55,14 +56,19 @@ cmake -B build -S . -DBUILD_TESTING=ON (With tests)
 cmake --build build --config Release
 ```
 
-## CI process
-Refer to [this page](https://github.com/taka-rl/car_simulator/docs/CI_Process.md)
+## Documentation
+- [Folder structure](docs/folder_structure.md)
+- [Development notes](docs/Car_Simulator_Dev_Notes.md)
+- [Class architecture](docs/class_architecture.md)
+- [Class diagram](docs/class_diagram.md)
+- [CI process](docs/CI_Process.md)
+
 
 ## Development Plan
 ### Simulation environment
 - [ ] Introduce reinforcement learning for the parking
     - [ ] Research RL libraries for C++
-    - [ ] Build an environment like gymnasium-style environment in Python
+    - [X] Build an environment like gymnasium-style environment in Python
     - [ ] Introduce continuous action space
     - [ ] Implement RL
     - [ ] Training

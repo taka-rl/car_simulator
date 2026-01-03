@@ -6,11 +6,8 @@
 #include <algorithm>
 #include <iostream>
 
-
-#include "../entities/Entity.h"
-
-
-inline constexpr float PI = 3.14159265358979323846f;
+#include "VehicleTypes.h"
+#include "../utilities/MathUtils.h"
 
 
 struct BicycleModelLimits {
@@ -18,18 +15,6 @@ struct BicycleModelLimits {
     float delta_rate_max{0.6f};      // rad/s  
     float a_max{1.0f};               // 1.0 m/s^2
     float v_max{2.78f};              // 10 km/h ≈ 2.78 m/s
-};
-
-struct Action {
-    float acceleration{0.0f};
-    float steeringAngle{0.0f};
-};
-
-struct VehicleState {
-    State pos{0.0f, 0.0f};
-    float psi{0.0f};
-    float velocity{0.0f};
-    float delta{0.0f};
 };
 
 /**

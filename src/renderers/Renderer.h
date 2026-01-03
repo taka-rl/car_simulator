@@ -3,11 +3,17 @@
 
 #include <algorithm>
 
+#include "../vehicledynamics/VehicleTypes.h"
+#include "../entities/Entity.h"
+#include "../shaders/RectShader.h"
+#include "../Loader.h"
+
+
 // forward declarations at global scope
 class Entity;
 class Loader;
 class RectShader;
-struct State;
+struct Position2D;
 
 
 class Renderer {
@@ -32,11 +38,11 @@ public:
 private:
     // converts a point (the object center in meters) into an NDC position for uOffset
     // ------------------------------------------------------------------------
-    State metersToNDC(float x_m, float y_m) const;
+    Position2D metersToNDC(float x_m, float y_m) const;
 
     // convcrts a full size (meters) into an NDC full size. for uScale
     // ------------------------------------------------------------------------
-    State rectSizeToNDC(float width_m, float height_m) const;
+    Position2D rectSizeToNDC(float width_m, float length_m) const;
 
     float ppm{20.f};
     int fbW{0}, fbH{0};
