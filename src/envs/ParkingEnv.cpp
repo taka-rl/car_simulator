@@ -329,3 +329,10 @@ bool ParkingEnv::isParked(const Position2D& carPos, float carYaw, const Position
     // std::cout << "Parked" << std::endl;
     return true;
 }
+
+
+// getter for CI tests
+std::array<Position2D, 4> ParkingEnv::getCalculateRelCorners(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw) {
+    return calculateRelCorners(carPos, carYaw, parkingPos, parkingYaw);
+}
+

@@ -66,7 +66,10 @@ public:
     VehicleState getVehicleState() const { return vehicleState; }
     Position2D getParkingPos() const { return parkingPos; }
     float getParkingYaw() const { return parkingYaw; }
-    
+
+    // getter for CI tests
+    std::array<Position2D, 4> getCalculateRelCorners(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw);
+
     
 private:
     // RL attributes
