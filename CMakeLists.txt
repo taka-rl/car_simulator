@@ -36,7 +36,7 @@ add_library(car_core
 )
 
 # Headers (your glad/GLFW headers live in include/)
-target_include_directories(CarSimulator PRIVATE
+target_include_directories(CarSimulator PUBLIC
   ${PROJECT_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/include
 )
