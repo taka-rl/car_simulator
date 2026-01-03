@@ -149,6 +149,8 @@ std::array<Position2D, 4> ParkingEnv::calculateRelCorners(const Position2D& carP
               << "(" << carFrameCorners[2].x << ", " << carFrameCorners[2].y << "), "
               << "(" << carFrameCorners[3].x << ", " << carFrameCorners[3].y << ")\n";
 
+    
+    // TODO: need to normalize the observation later for RL training purpose
     return carFrameCorners;
 }
 
