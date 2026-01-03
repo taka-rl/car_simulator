@@ -50,7 +50,7 @@ class Entity {
   +color : std::array<float, 4>
   +length_m : float
   +loader : Loader*
-  +pos_m : State
+  +pos_m : Position2D
   +rectShader : RectShader*
   +width_m : float
   +yaw : float
@@ -63,7 +63,7 @@ class Entity {
   +getYaw() : float const noexcept
   +setColor(const std::array<float, 4>& newColor) : void
   +setLength(const float newLength) : void
-  +setPos(const State& newPos) : void
+  +setPos(const Position2D& newPos) : void
   +setWidth(const float newWidth) : void
   +setYaw(const float newYaw) : void
 }
@@ -82,23 +82,38 @@ class Loader {
   -makeVBO() : unsigned int
 }
 
-class ParkingEnv {
-  -actionSpace : std::array<float, 2>
-  -actionType : std::string
-  -observationSpace : std::array<float, 2>
-  -randomizer : Randomizer*
-  +ParkingEnv(Randomizer* randomizer)
-  +isParked(const State& carPos, float carYaw, const State& parkingPos, float parkingYaw) : bool
-  +reset() : void
-  +reward() : void
-  +setParkingPos(float minX, float maxX, float minY, float maxY) : State
-  +setParkingYaw() : float
-  +step() : void
-  -calcReward() : float
-  -getState() : void
-  -isParkedAtCenter(const State& carPos, const float carYaw, const State& parkingPos, const float& parkingYaw) : bool
-  -worldToSlot(const State& carPos, const State& slotPos, float slotYaw) : State
+class Observation {
+  <<struct>>
+  +distCorners: std::array<Position2D, 4>
+  +vehicleState: VehicleState
 }
+
+class ParkingEnv {
+  -actionType : std::string
+  -actionSpace : std::array<float, 2>
+  -observationSpace : std::array<float, 2>
+  -observation : Observation
+  -rewardValue : float
+  -vehicleState : VehicleState
+  -parkingPos : Position2D
+  -parkingYaw : float
+  -randomizer : Randomizer*
+  -bicycleModel : BicycleModel
+  +ParkingEnv(Randomizer* randomizer)
+  +step(Action& action, const float& simDt) : Observation
+  +reset() : void
+  +reward() : float
+  +getObservation() : Observation const
+  +getVehicleState() : VehicleState const
+  +getParkingPos() : Position2D const
+  +getParkingYaw() : float const
+  -setParkingPos(float minX, float maxX, float minY, float maxY) : Position2D
+  -setParkingYaw() : float
+  -worldToSlot(const Position2D& carPos, const Position2D& slotPos, float slotYaw) : Position2D
+  -isParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw) : bool
+  -isParkedAtCenter(const Position2D& carPos, const float carYaw, const Position2D& parkingPos, const float& parkingYaw) : bool
+}
+
 
 class Randomizer {
   -g_rng : std::mt19937
@@ -131,8 +146,8 @@ class Renderer {
   -ppm : float
   +Renderer(float ppm, int fbW, int fbH)
   +draw(const Entity& e) : void const
-  -metersToNDC(float x_m, float y_m) : State const
-  -rectSizeToNDC(float width_m, float length_m) : State const
+  -metersToNDC(float x_m, float y_m) : Position2D const
+  -rectSizeToNDC(float width_m, float length_m) : Position2D const
 }
 
 class ShaderPaths {
@@ -156,51 +171,52 @@ class ShaderProgram {
 }
 
 class Simulator {
-  -accumulator : double
-  -action : Action
-  -anchors : std::array<std::array<float, 2>, 4>
-  -bicycleModel : BicycleModel
-  -carEntity : Entity
-  -curDelta : float
-  -curPsi : float
-  -curState : State
-  -env : ParkingEnv
-  -fbH : int
+  -window : GLFWwindow*
   -fbW : int
-  -lastTime : double
-  -parkingEntity : Entity
-  -prevDelta : float
-  -prevPsi : float
-  -prevState : State
-  -quad : Loader
-  -randomizer : Randomizer
-  -rectShader : RectShader
-  -renderer : Renderer
-  -simDt : const double
-  -trajectoryEntities : std::vector<Entity>
+  -fbH : int
   -vehicleParams : VehicleParams
-  -vehicleState : VehicleState
+  -randomizer : Randomizer
+  -env : ParkingEnv
+  -action : Action
+  -rectShader : std::unique_ptr<RectShader>
+  -quad : std::unique_ptr<Loader>
+  -renderer : std::unique_ptr<Renderer>
+  -carEntity : Entity
+  -parkingEntity : Entity
   -wheelFL : Entity
   -wheelFR : Entity
   -wheelRL : Entity
   -wheelRR : Entity
-  -window : GLFWwindow*
-  +Simulator()
+  -trajectoryEntities : std::vector<Entity>
+  -anchors : std::array<std::array<float, 2>, 4>
+  -simDt : double
+  -accumulator : double
+  -lastTime : double
+  -prevState : Position2D
+  -curState : Position2D
+  -prevPsi : float
+  -curPsi : float
+  -prevDelta : float
+  -curDelta : float
+  +Simulator(GLFWwindow* window)
   +init() : bool
   +run() : void
-  +tick() : void
-  -clampAccumulator(double& accum, const double simDt, double maxSteps = 5.0) : void
-  -initEntities() : void
   -initRenderer() : void
   -initSimulationState() : void
-  -initWindowAndGL() : bool
-  -interp(const State& prev, const State& curr, float alpha) : State
-  -keepOnScreenMeters(State& s, float width_m, float length_m, int fbW, int fbH, float ppm) : void
+  -initEntities() : void
+  -placeWheel(Entity& wheel, float ax, float ay, bool front, const Position2D& pos, const float& yawDraw, const float& steer) : void
+  -tick() : void
+  -draw() : void
+  -processInput(GLFWwindow* window, Action& action) : void
+  -framebuffer_size_callback(GLFWwindow* window, int width, int height) : void
+  -clampAccumulator(double& accum, const double simDt, double maxSteps = 5.0) : void
   -lerp(float a, float b, float t) : float
-  -placeWheel(Entity& wheel, float ax, float ay, bool front, const State& pos, const float& yawDraw, const float& steer) : void
+  -interp(const Position2D& prev, const Position2D& curr, float alpha) : Position2D
+  -keepOnScreenMeters(Position2D& s, float width_m, float length_m, int fbW, int fbH, float ppm) : void
 }
 
-class State {
+
+class Position2D {
   <<struct>>
   +x : float
   +y : float
@@ -223,7 +239,7 @@ class VehicleParams {
 class VehicleState {
   <<struct>>
   +delta : float
-  +pos : State
+  +pos : Position2D
   +psi : float
   +velocity : float
 }
@@ -245,13 +261,20 @@ class Window {
 
 %% Relationships (inferred from inheritance + member fields)
 RectShader --|> ShaderProgram
-Entity *-- State : pos_m
+Entity *-- Position2D : pos_m
 Entity --> Loader : loader
 Entity --> RectShader : rectShader
+
 ParkingEnv --> Randomizer : randomizer
-Simulator *-- VehicleState : vehicleState
+ParkingEnv *-- BicycleModel : bicycleModel
+ParkingEnv *-- VehicleState : vehicleState
+ParkingEnv *-- Observation : observation
+ParkingEnv *-- Position2D : parkingPos
+
+Observation *-- VehicleState : vehicleState
+Observation *-- Position2D : distCorners[4]
+
 Simulator *-- VehicleParams : vehicleParams
-Simulator *-- BicycleModel : bicycleModel
 Simulator *-- Randomizer : randomizer
 Simulator *-- ParkingEnv : env
 Simulator *-- Action : action
@@ -265,10 +288,12 @@ Simulator *-- Entity : wheelFR
 Simulator *-- Entity : wheelRL
 Simulator *-- Entity : wheelRR
 Simulator *-- Entity : trajectoryEntities
-Simulator *-- State : prevState
-Simulator *-- State : curState
-VehicleState *-- State : pos
+Simulator *-- Position2D : prevState
+Simulator *-- Position2D : curState
+
+VehicleState *-- Position2D : pos
 VehicleParams *-- WheelSize : wheel
+
 ```
 
 ## Notes
