@@ -59,7 +59,7 @@ cmake --build build --config Release
 ## Documentation
 - [Folder structure](docs/folder_structure.md)
 - [Development notes](docs/Car_Simulator_Dev_Notes.md)
-- [Class architecture](docs/class_architecture.md): will be uploaded later
+- [Class architecture](docs/class_architecture.md)
 - [Class diagram](docs/class_diagram.md)
 - [CI process](docs/CI_Process.md)
 

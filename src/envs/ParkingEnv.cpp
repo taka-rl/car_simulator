@@ -52,11 +52,11 @@ float ParkingEnv::reward() {
     // TODO: reward shaping can be added here later
     if (parkingSuccess) {
         rewardValue = 1.0f;
-        // std::cout << "Parking Success " << "Reward: " << rewardValue << std::endl;
+        std::cout << "Parking Success " << "Reward: " << rewardValue << std::endl;
         return rewardValue;
     } else {
         rewardValue = 0.0f;
-        //std::cout << "Parking fail " << "Reward: " << rewardValue << std::endl;
+        std::cout << "Parking fail " << "Reward: " << rewardValue << std::endl;
         return rewardValue;
     }
 }
@@ -136,19 +136,18 @@ std::array<Position2D, 4> ParkingEnv::calculateRelCorners(const Position2D& carP
         const Position2D cornerWorld = parkingPos + rotateCCW(cornerSlot[i], parkingYaw);
 
         // debug
-        std::cout << "Corner " << (i + 1) << " in world frame: "
-                  << "(" << cornerWorld.x << ", " << cornerWorld.y << ")\n";
+        // std::cout << "Corner " << (i + 1) << " in world frame: "
+        //           << "(" << cornerWorld.x << ", " << cornerWorld.y << ")\n";
         
         // 3: Transform them into the car frame
         carFrameCorners[i] = worldToCar(cornerWorld.x, cornerWorld.y, carPos, carYaw);
     }
     // debug
-    std::cout << "Car frame corners: "
-              << "(" << carFrameCorners[0].x << ", " << carFrameCorners[0].y << "), "
-              << "(" << carFrameCorners[1].x << ", " << carFrameCorners[1].y << "), "
-              << "(" << carFrameCorners[2].x << ", " << carFrameCorners[2].y << "), "
-              << "(" << carFrameCorners[3].x << ", " << carFrameCorners[3].y << ")\n";
-
+    //std::cout << "Car frame corners: "
+    //          << "(" << carFrameCorners[0].x << ", " << carFrameCorners[0].y << "), "
+    //          << "(" << carFrameCorners[1].x << ", " << carFrameCorners[1].y << "), "
+    //          << "(" << carFrameCorners[2].x << ", " << carFrameCorners[2].y << "), "
+    //          << "(" << carFrameCorners[3].x << ", " << carFrameCorners[3].y << ")\n";
     
     // TODO: need to normalize the observation later for RL training purpose
     return carFrameCorners;
