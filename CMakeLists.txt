@@ -28,8 +28,16 @@ set(SOURCES
 # Create executable
 add_executable(CarSimulator ${SOURCES})
 
+# Core library (NO OpenGL / NO Window / NO main) for CI tests
+add_library(car_core
+  ${SRC_DIR}/envs/ParkingEnv.cpp
+  ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
+  ${SRC_DIR}/utilities/Randomizer.cpp
+)
+
 # Headers (your glad/GLFW headers live in include/)
 target_include_directories(CarSimulator PRIVATE
+  ${PROJECT_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/include
 )
 
@@ -90,7 +98,7 @@ if (BUILD_TESTING)
 
   set(TEST_NAME ${PROJECT_NAME}_tests)
   add_executable(${TEST_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_parking_math.cpp)
-  target_link_libraries(${TEST_NAME} PRIVATE GTest::gtest_main)
+  target_link_libraries(${TEST_NAME} PRIVATE car_core GTest::gtest_main)
 
   include(GoogleTest)
   gtest_discover_tests(${TEST_NAME})
