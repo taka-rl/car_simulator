@@ -41,7 +41,7 @@ target_include_directories(CarSimulator PRIVATE
 )
 
 # Headers for CI tests
-target_include_directories(car_core PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_include_directories(car_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
 
 # Library and include
 if (WIN32)
