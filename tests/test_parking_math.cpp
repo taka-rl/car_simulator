@@ -2,11 +2,11 @@
 #include <array>
 #include <cmath>
 
-#include "../envs/ParkingEnv.h"
-#include "../envs/ParkingParams.h"
-#include "../vehicledynamics/VehicleTypes.h"
-#include "../utilities/Randomizer.h"
-#include "../utilities/MathUtils.h"
+#include "src/envs/ParkingEnv.h"
+#include "src/envs/ParkingParams.h"
+#include "src/vehicledynamics/VehicleTypes.h"
+#include "src/utilities/Randomizer.h"
+#include "src/utilities/MathUtils.h"
 
 
 // temporal function for temporary
