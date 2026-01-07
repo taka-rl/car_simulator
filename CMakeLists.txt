@@ -40,6 +40,9 @@ target_include_directories(CarSimulator PRIVATE
   ${CMAKE_SOURCE_DIR}/include
 )
 
+# Headers for CI tests
+target_include_directories(car_core PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
 # Library and include
 if (WIN32)
   # --- Windows path (your current setup) ---
