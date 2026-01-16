@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "9-fix-the-error-during-the-ci-process" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
