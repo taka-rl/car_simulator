@@ -124,11 +124,12 @@ std::array<Position2D, 4> ParkingEnv::calculateRelCorners(const Position2D& carP
     const float halfLen = PARKING_LENGTH * 0.5f;
     const float halfWid = PARKING_WIDTH  * 0.5f;
 
+    // corners in parking slot frame in CW order
     const std::array<Position2D, 4> cornerSlot = { 
         Position2D{ halfWid,  halfLen},  // corner 1: front-right
-        Position2D{-halfWid,  halfLen},  // corner 2: front-left
+        Position2D{ halfWid, -halfLen},  // corner 2: rear-right
         Position2D{-halfWid, -halfLen},  // corner 3: rear-left
-        Position2D{ halfWid, -halfLen}   // corner 4: rear-right
+        Position2D{-halfWid,  halfLen}   // corner 4: front-left
     };
 
     std::array<Position2D, 4> carFrameCorners;
@@ -296,13 +297,13 @@ bool ParkingEnv::isParked(const Position2D& carPos, float carYaw, const Position
     const float cRel   = std::cos(psiRel);
     const float sRel   = std::sin(psiRel);
 
-    // Car corners in *car* local frame (x forward, y left)
+    // Car corners in *car* local frame (x forward, y left) in CW order
     // Four corners: (±halfLen, ±halfWid)
     std::array<Position2D, 4> carLocalCorners = {{
-        { +halfCarLen, +halfCarWid },
-        { +halfCarLen, -halfCarWid },
-        { -halfCarLen, -halfCarWid },
-        { -halfCarLen, +halfCarWid }
+        { +halfCarLen, +halfCarWid },  // corner 1: front-right
+        { +halfCarLen, -halfCarWid },  // corner 2: rear-right
+        { -halfCarLen, -halfCarWid },  // corner 3: rear-left
+        { -halfCarLen, +halfCarWid }   // corner 4: front-left
     }};
 
     // Transform each car corner into slot frame and test
