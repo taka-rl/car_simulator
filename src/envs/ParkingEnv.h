@@ -69,7 +69,7 @@ public:
 
     // getter for CI tests
     std::array<Position2D, 4> getCalculateRelCorners(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw);
-
+    bool getIsParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw);
     
 private:
     // RL attributes

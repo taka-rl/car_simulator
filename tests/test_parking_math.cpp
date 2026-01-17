@@ -175,3 +175,102 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw90_SlotYaw90) {
         ExpectPosNear(got[i], expected[i]);
     }
 }
+
+
+// Test cases for ParkingEnv::isParked
+// -------------------------------------------------------------------------------------------------
+
+// Test case 1: Car fully inside parking slot, expected: true
+TEST(ParkingEnvPark, IsParked_CarInsideSlot) {
+    // Setup environment
+    ParkingEnv env = setUpEnv();
+
+    // Define test inputs
+    const Position2D carPos{5.0f, 5.0f};
+    const float carYaw = 0.0f;
+
+    const Position2D slotPos{5.0f, 5.0f};
+    const float slotYaw = 0.0f;
+
+    // Call the function under test
+    const bool got = env.getIsParked(carPos, carYaw, slotPos, slotYaw);
+
+    // Verify result
+    EXPECT_TRUE(got);
+}
+
+// Test case 2: Car partially outside parking slot, expected: false
+TEST(ParkingEnvPark, IsParked_CarPartiallyOutsideSlot) {
+    // Setup environment
+    ParkingEnv env = setUpEnv();
+
+    // Define test inputs
+    const Position2D carPos{7.0f, 5.0f};  // shifted right, partially outside
+    const float carYaw = 0.0f;
+
+    const Position2D slotPos{5.0f, 5.0f};
+    const float slotYaw = 0.0f;
+
+    // Call the function under test
+    const bool got = env.getIsParked(carPos, carYaw, slotPos, slotYaw);
+
+    // Verify result
+    EXPECT_FALSE(got);
+}
+
+// Test case 3: Car fully outside parking slot, expected: false
+TEST(ParkingEnvPark, IsParked_CarOutsideSlot) {
+    // Setup environment
+    ParkingEnv env = setUpEnv();
+
+    // Define test inputs
+    const Position2D carPos{10.0f, 10.0f};  // far outside
+    const float carYaw = 0.0f;
+
+    const Position2D slotPos{5.0f, 5.0f};
+    const float slotYaw = 0.0f;
+
+    // Call the function under test
+    const bool got = env.getIsParked(carPos, carYaw, slotPos, slotYaw);
+
+    // Verify result
+    EXPECT_FALSE(got);
+}
+
+// Test case 4: Car inside slot but rotated, expected: true
+TEST(ParkingEnvPark, IsParked_CarRotatedInsideSlot) {
+    // Setup environment
+    ParkingEnv env = setUpEnv();
+
+    // Define test inputs
+    const Position2D carPos{5.0f, 5.0f};
+    const float carYaw = kDeg90 * (1.0f / 6.0f);  // rotated 15 degrees
+
+    const Position2D slotPos{5.0f, 5.0f};
+    const float slotYaw = 0.0f;
+
+    // Call the function under test
+    const bool got = env.getIsParked(carPos, carYaw, slotPos, slotYaw);
+
+    // Verify result
+    EXPECT_TRUE(got);
+}
+
+// Test case 5: Car barely touching the edge of the parking slot, expected: false
+TEST(ParkingEnvPark, IsParked_CarTouchingEdgeSlot) {
+    // Setup environment
+    ParkingEnv env = setUpEnv();
+
+    // Define test inputs
+    const Position2D carPos{5.0f + (PARKING_WIDTH / 2.0f) + (CAR_WIDTH / 2.0f), 5.0f};  // right edge touching
+    const float carYaw = 0.0f;
+
+    const Position2D slotPos{5.0f, 5.0f};
+    const float slotYaw = 0.0f;
+
+    // Call the function under test
+    const bool got = env.getIsParked(carPos, carYaw, slotPos, slotYaw);
+
+    // Verify result
+    EXPECT_FALSE(got);
+}
