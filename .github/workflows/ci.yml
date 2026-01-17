@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "11-update-tests-in-test_parking_mathcpp" ]
   pull_request:
     branches: [ "main" ]
 
