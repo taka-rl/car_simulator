@@ -9,33 +9,32 @@
 #include "utilities/MathUtils.h"
 
 
-// temporal function for temporary
-int calAdd(int a, int b) {
-    return a + b;
-}
-
-// tests
-TEST(calAddTest, calAddTestExample) {
-
-    std::cout << "Test is executed " << std::endl;
-    EXPECT_EQ(calAdd(1, 2), 3);
-    EXPECT_EQ(calAdd(-1, 2), 1);
-    EXPECT_EQ(calAdd(0, 0), 0);
-}
-
 // Common helpers/constants for these tests (put near the top of test_parking_math.cpp)
 namespace {
+    // Tolerance for floating point computations
     constexpr float kEps = 1e-4f;
 
+    // Helper function to compare positions
     void ExpectPosNear(const Position2D& a, const Position2D& b) {
         EXPECT_NEAR(a.x, b.x, kEps);
         EXPECT_NEAR(a.y, b.y, kEps);
     }
     
-    static constexpr float kPi = 3.14159265358979323846f;
+    static constexpr float kPi = 3.14159265358979323846f;  // pi constant same as in MathUtils.h
     static constexpr float kDeg90 = kPi * 0.5f;
+    
+    // common functions/constants for these tests
+    // Setup ParkingEnv for tests
+    ParkingEnv setUpEnv() {
+        Randomizer randomizer;
+        ParkingEnv env(&randomizer);
+        return env;
+    }
 }
 
+
+// Test cases for ParkingEnv::calculateRelCorners
+// -------------------------------------------------------------------------------------------------
 
 // Test case 1:
 // carPos = (10,10), carYaw = 0
@@ -45,17 +44,20 @@ namespace {
 // expected car-frame vectors (carYaw=0 => car frame == world frame):
 //   (-3.25, -2), (-3.25, -8), (-6.75, -8), (-6.75, -2)
 TEST(ParkingEnvObs, CarFrameVectors_CarYaw0_SlotYaw0) {
-    Randomizer randomizer;
-    ParkingEnv env(&randomizer);
+    // Setup environment
+    ParkingEnv env = setUpEnv();
 
+    // Define test inputs
     const Position2D carPos{10.0f, 10.0f};
     const float carYaw = 0.0f;
 
     const Position2D slotPos{5.0f, 5.0f};
     const float slotYaw = 0.0f;
 
+    // Call the function under test
     const auto got = env.getCalculateRelCorners(carPos, carYaw, slotPos, slotYaw);
 
+    // Define expected outputs
     const std::array<Position2D, 4> expected = {
         Position2D{-3.25f, -2.0f},
         Position2D{-3.25f, -8.0f},
@@ -63,8 +65,7 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw0_SlotYaw0) {
         Position2D{-6.75f, -2.0f}
     };
 
-    // If your calcObsCurrentState returns corners in a different order,
-    // reorder expected[] to match your corner order.
+    // Verify results
     for (int i = 0; i < 4; ++i) {
         ExpectPosNear(got[i], expected[i]);
     }
@@ -78,17 +79,20 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw0_SlotYaw0) {
 // expected car-frame vectors (rotate by R(-90deg): (dx,dy)->(dy,-dx)):
 //   (-2, 3.25), (-8, 3.25), (-8, 6.75), (-2, 6.75)
 TEST(ParkingEnvObs, CarFrameVectors_CarYaw90_SlotYaw0) {
-    Randomizer randomizer;
-    ParkingEnv env(&randomizer);
+    // Setup environment
+    ParkingEnv env = setUpEnv();
 
+    // Define test inputs
     const Position2D carPos{10.0f, 10.0f};
     const float carYaw = kDeg90;
 
     const Position2D slotPos{5.0f, 5.0f};
     const float slotYaw = 0.0f;
 
+    // Call the function under test
     const auto got = env.getCalculateRelCorners(carPos, carYaw, slotPos, slotYaw);
 
+    // Define expected outputs
     const std::array<Position2D, 4> expected = {
         Position2D{-2.0f,  3.25f},
         Position2D{-8.0f,  3.25f},
@@ -96,6 +100,7 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw90_SlotYaw0) {
         Position2D{-2.0f,  6.75f}
     };
 
+    // Verify results
     for (int i = 0; i < 4; ++i) {
         ExpectPosNear(got[i], expected[i]);
     }
@@ -109,17 +114,20 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw90_SlotYaw0) {
 // expected car-frame vectors (carYaw=0 => car frame == world frame):
 //   (-8, -3.25), (-2, -3.25), (-2, -6.75), (-8, -6.75)
 TEST(ParkingEnvObs, CarFrameVectors_CarYaw0_SlotYaw90) {
-    Randomizer randomizer;
-    ParkingEnv env(&randomizer);
-
+    // Setup environment
+    ParkingEnv env = setUpEnv();
+    
+    // Define test inputs
     const Position2D carPos{10.0f, 10.0f};
     const float carYaw = 0.0f;
 
     const Position2D slotPos{5.0f, 5.0f};
     const float slotYaw = kDeg90;
 
+    // Call the function under test
     const auto got = env.getCalculateRelCorners(carPos, carYaw, slotPos, slotYaw);
 
+    // Define expected outputs
     const std::array<Position2D, 4> expected = {
         Position2D{-8.0f, -3.25f},
         Position2D{-2.0f, -3.25f},
@@ -127,6 +135,7 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw0_SlotYaw90) {
         Position2D{-8.0f, -6.75f}
     };
 
+    // Verify results
     for (int i = 0; i < 4; ++i) {
         ExpectPosNear(got[i], expected[i]);
     }
@@ -140,17 +149,20 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw0_SlotYaw90) {
 // expected car-frame vectors (rotate by R(-90deg): (dx,dy)->(dy,-dx)):
 //   (-3.25, 8), (-3.25, 2), (-6.75, 2), (-6.75, 8)
 TEST(ParkingEnvObs, CarFrameVectors_CarYaw90_SlotYaw90) {
-    Randomizer randomizer;
-    ParkingEnv env(&randomizer);
+    // Setup environment
+    ParkingEnv env = setUpEnv();
 
+    // Define test inputs
     const Position2D carPos{10.0f, 10.0f};
     const float carYaw = kDeg90;
 
     const Position2D slotPos{5.0f, 5.0f};
     const float slotYaw = kDeg90;
 
+    // Call the function under test
     const auto got = env.getCalculateRelCorners(carPos, carYaw, slotPos, slotYaw);
 
+    // Define expected outputs
     const std::array<Position2D, 4> expected = {
         Position2D{-3.25f, 8.0f},
         Position2D{-3.25f, 2.0f},
@@ -158,6 +170,7 @@ TEST(ParkingEnvObs, CarFrameVectors_CarYaw90_SlotYaw90) {
         Position2D{-6.75f, 8.0f}
     };
 
+    // Verify results
     for (int i = 0; i < 4; ++i) {
         ExpectPosNear(got[i], expected[i]);
     }
