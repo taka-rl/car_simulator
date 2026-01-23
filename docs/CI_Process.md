@@ -29,18 +29,35 @@ Key files:
 
 ```cmake
 set(SOURCES
-    src/shaders/ShaderProgram.cpp
-    src/shaders/RectShader.cpp
-    src/entities/Entity.cpp
-    src/renderers/Renderer.cpp
-    src/vehicledynamics/BicycleModel.cpp
-    src/Loader.cpp
-    src/main.cpp
-    src/glad.c
+    ${SRC_DIR}/shaders/ShaderProgram.cpp
+    ${SRC_DIR}/shaders/RectShader.cpp
+    ${SRC_DIR}/entities/Entity.cpp
+    ${SRC_DIR}/renderers/Renderer.cpp
+    ${SRC_DIR}/utilities/Randomizer.cpp    
+    ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
+    ${SRC_DIR}/envs/ParkingEnv.cpp
+    ${SRC_DIR}/simulator/Simulator.cpp
+    ${SRC_DIR}/Loader.cpp
+    ${SRC_DIR}/Window.cpp
+    ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/glad.c
 )
 
 add_executable(CarSimulator ${SOURCES})
 target_include_directories(CarSimulator PRIVATE ${CMAKE_SOURCE_DIR}/include)
+```
+
+- For CI tests
+```cmake
+# Core library (NO OpenGL / NO Window / NO main) for CI tests
+add_library(car_core
+  ${SRC_DIR}/envs/ParkingEnv.cpp
+  ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
+  ${SRC_DIR}/utilities/Randomizer.cpp
+)
+
+# Headers for CI tests
+target_include_directories(car_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
 ```
 
 On Windows, GLFW is linked using the local import lib in lib/:
