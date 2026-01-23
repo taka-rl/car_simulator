@@ -338,3 +338,7 @@ std::array<Position2D, 4> ParkingEnv::getCalculateRelCorners(const Position2D& c
     return calculateRelCorners(carPos, carYaw, parkingPos, parkingYaw);
 }
 
+bool ParkingEnv::getIsParked(const Position2D& carPos, float carYaw, const Position2D& parkingPos, float parkingYaw) {
+    return isParked(carPos, carYaw, parkingPos, parkingYaw);
+}
+
