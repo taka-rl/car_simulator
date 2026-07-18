@@ -9,30 +9,67 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Source root
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-# Add source files
-set(SOURCES
-    ${SRC_DIR}/shaders/ShaderProgram.cpp
-    ${SRC_DIR}/shaders/RectShader.cpp
-    ${SRC_DIR}/entities/Entity.cpp
-    ${SRC_DIR}/renderers/Renderer.cpp
-    ${SRC_DIR}/utilities/Randomizer.cpp    
-    ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
-    ${SRC_DIR}/envs/ParkingEnv.cpp
-    ${SRC_DIR}/simulator/Simulator.cpp
-    ${SRC_DIR}/Loader.cpp
-    ${SRC_DIR}/Window.cpp
-    ${SRC_DIR}/main.cpp
-    ${SRC_DIR}/glad.c
-)
-
-# Create executable
-add_executable(CarSimulator ${SOURCES})
-
-# Core library (NO OpenGL / NO Window / NO main) for CI tests
-add_library(car_core
-  ${SRC_DIR}/envs/ParkingEnv.cpp
+# ------------------------------------------------------------------------------
+# Core simulation logic
+# ------------------------------------------------------------------------------
+add_library(car_core STATIC
   ${SRC_DIR}/vehicledynamics/BicycleModel.cpp
   ${SRC_DIR}/utilities/Randomizer.cpp
+)
+
+target_include_directories(car_core
+    PUBLIC
+        ${SRC_DIR}
+)
+
+# ------------------------------------------------------------------------------
+# Rendering and window system
+# ------------------------------------------------------------------------------
+add_library(car_render STATIC
+  ${SRC_DIR}/entities/Entity.cpp
+  ${SRC_DIR}/renderers/Renderer.cpp
+  ${SRC_DIR}/shaders/ShaderProgram.cpp
+  ${SRC_DIR}/shaders/RectShader.cpp
+  ${SRC_DIR}/Window.cpp
+  ${SRC_DIR}/Loader.cpp
+  ${SRC_DIR}/glad.c
+)
+
+target_include_directories(car_render
+    PUBLIC
+        ${SRC_DIR}
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(car_render
+    PUBLIC
+        car_core
+)
+
+# ------------------------------------------------------------------------------
+# Simulation environments
+# ------------------------------------------------------------------------------
+add_library(car_env STATIC
+  ${SRC_DIR}/envs/ParkingEnv.cpp
+)
+
+target_include_directories(car_env
+    PUBLIC
+        ${SRC_DIR}
+)
+
+target_link_libraries(car_env
+    PUBLIC
+        car_core
+)
+
+# ------------------------------------------------------------------------------
+# Final application
+# ------------------------------------------------------------------------------
+add_executable(CarSimulator
+    ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/simulator/Simulator.cpp
 )
 
 # Headers (your glad/GLFW headers live in include/)
@@ -40,10 +77,15 @@ target_include_directories(CarSimulator PRIVATE
   ${CMAKE_SOURCE_DIR}/include
 )
 
-# Headers for CI tests
-target_include_directories(car_core PUBLIC ${PROJECT_SOURCE_DIR}/src)
+# Internal dependencies are required on every platform.
+target_link_libraries(CarSimulator
+    PRIVATE
+        car_core
+        car_env
+        car_render
+)
 
-# Library and include
+# Platform-specific dependencies
 if (WIN32)
   # --- Windows path (your current setup) ---
   # Link GLFW import lib directly + system libs
