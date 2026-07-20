@@ -113,37 +113,37 @@ target_link_libraries(CarSimulator
 )
 
 # Platform-specific dependencies
-if (WIN32)
-  # --- Windows path (your current setup) ---
-  # Link GLFW import lib directly + system libs
-  target_link_libraries(CarSimulator PRIVATE
-    opengl32
-  )
-
-  # local includes/libraries will be removed later so GLFW will be needed to install on Windows (e.g. vcpkg install glfw3)
-  # find_package(OpenGL REQUIRED)
-
-  # Depending on how GLFW is installed, the package name may be glfw or glfw3.
-  # You might need to adjust this line based on your system.
-  # find_package(glfw3 REQUIRED)
-
-elseif(APPLE)
-  # --- macOS path ---
-  # local includes/libraries will be removed later so GLFW will be needed to install on macOS (e.g. Homebrew: brew install glfw)
-  # find_package(OpenGL REQUIRED)
-
-  # Depending on how GLFW is installed, the package name may be glfw or glfw3.
-  # You might need to adjust this line based on your system.
-  # find_package(glfw3 REQUIRED)
-
-  # target_link_libraries(CarSimulator PRIVATE
-  #     glfw                          # or glfw3, depending on the package
-  #     OpenGL::GL
-  # )  
-
-else()
-  # --- Linux or others (future) ---
-endif()
+# if (WIN32)
+#   # --- Windows path (your current setup) ---
+#   # Link GLFW import lib directly + system libs
+#   target_link_libraries(CarSimulator PRIVATE
+#     opengl32
+#   )
+# 
+#   # local includes/libraries will be removed later so GLFW will be needed to install on Windows (e.g. vcpkg install glfw3)
+#   # find_package(OpenGL REQUIRED)
+# 
+#   # Depending on how GLFW is installed, the package name may be glfw or glfw3.
+#   # You might need to adjust this line based on your system.
+#   # find_package(glfw3 REQUIRED)
+# 
+# elseif(APPLE)
+#   # --- macOS path ---
+#   # local includes/libraries will be removed later so GLFW will be needed to install on macOS (e.g. Homebrew: brew install glfw)
+#   # find_package(OpenGL REQUIRED)
+# 
+#   # Depending on how GLFW is installed, the package name may be glfw or glfw3.
+#   # You might need to adjust this line based on your system.
+#   # find_package(glfw3 REQUIRED)
+# 
+#   # target_link_libraries(CarSimulator PRIVATE
+#   #     glfw                          # or glfw3, depending on the package
+#   #     OpenGL::GL
+#   # )  
+# 
+# else()
+#   # --- Linux or others (future) ---
+# endif()
 
 # Enable testing (optional)
 include(CTest)
@@ -165,7 +165,7 @@ if (BUILD_TESTING)
 
   set(TEST_NAME ${PROJECT_NAME}_tests)
   add_executable(${TEST_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_parking_math.cpp)
-  target_link_libraries(${TEST_NAME} PRIVATE car_core GTest::gtest_main)
+  target_link_libraries(${TEST_NAME} PRIVATE car_env GTest::gtest_main)
 
   include(GoogleTest)
   gtest_discover_tests(${TEST_NAME})
