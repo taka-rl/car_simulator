@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/add_ci_matrix_build"]
   pull_request:
     branches: [ "main" ]
   # Enable the maunal trigger button
