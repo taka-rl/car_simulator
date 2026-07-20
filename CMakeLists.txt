@@ -9,6 +9,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Source root
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+include(FetchContent)
+
+# ------------------------------------------------------------------------------
+# GLFW
+# ------------------------------------------------------------------------------
+
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+set(GLFW_LIBRARY_TYPE STATIC CACHE STRING "" FORCE)
+
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG        3.4
+    GIT_SHALLOW    TRUE
+)
+
+FetchContent_MakeAvailable(glfw)
+
 # ------------------------------------------------------------------------------
 # Core simulation logic
 # ------------------------------------------------------------------------------
@@ -42,9 +63,15 @@ target_include_directories(car_render
         ${PROJECT_SOURCE_DIR}/include
 )
 
+target_compile_definitions(car_render
+    PUBLIC
+        GLFW_INCLUDE_NONE
+)
+
 target_link_libraries(car_render
     PUBLIC
         car_core
+        glfw
 )
 
 # ------------------------------------------------------------------------------
@@ -90,11 +117,7 @@ if (WIN32)
   # --- Windows path (your current setup) ---
   # Link GLFW import lib directly + system libs
   target_link_libraries(CarSimulator PRIVATE
-    ${CMAKE_SOURCE_DIR}/lib/libglfw3dll.a   # <— your import lib
     opengl32
-    gdi32
-    user32
-    shell32
   )
 
   # local includes/libraries will be removed later so GLFW will be needed to install on Windows (e.g. vcpkg install glfw3)
