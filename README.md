@@ -4,6 +4,7 @@
 Top-down 2D car simulator: **car body + 4 wheels**, meters-first physics with a **fixed timestep**, and smooth rendering via a single **unit-quad** mesh and a **RectShader** (scale → rotate → translate).
 
 ## Features
+
 - Real-time 2D rendering (unit quad mesh + shader: scale → rotate → translate)
 - Kinematic bicycle model (meters + radians)
 - Discrete action space (combined accelerate + steer)
@@ -14,14 +15,14 @@ Top-down 2D car simulator: **car body + 4 wheels**, meters-first physics with a 
 ---
 
 ## Simulation Environment
-OS Windows 10
+Windows 11
 
 ### Library
 | Library      | version | link |
 |-----------|---------|---------| 
-| GLFW    | 3.4 | https://www.glfw.org/download.html |
-| GLAD | Refer to https://rpxomi.github.io/  | https://glad.dav1d.de/ |
-| C++ g++ compiler (Windows 10)| 13.1.0   | - |
+| GLFW    | 3.4 | https://www.glfw.org/download.html, https://github.com/glfw/glfw |
+| GLAD | APIs: gl=4.6   | https://glad.dav1d.de/, https://github.com/dav1dde/glad, https://rpxomi.github.io/ |
+
 
 ### Controls
 A discrete action space is currently implemented and the car movement is calculated by a kinematic bicycle model with the input controls. 
@@ -35,25 +36,29 @@ Combined actions (e.g. accelerate + steer) are possible.
 | Escape | Quit |
 
 
-## Build setting
-### Build command
-- without CMake
+## Build System
+
+The necessary tools for the build are as follows:
+
+| Tools      | version | link |
+|-----------|---------|---------|
+| CMake | 4.2.1 | https://cmake.org/download/ |
+| clang/clang++ | 22.1.8 | https://github.com/llvm/llvm-project/releases/tag/llvmorg-22.1.8 |
+| Ninja | 1.13.2 | https://github.com/ninja-build/ninja/releases/tag/v1.13.2 |
+
+### Build Command
+
+1. Configure & Generate Build Files  
+Note that tests is only available in CI pipeline.
+
 ```cmd
-g++ -std=c++17 src/glad.c src/main.cpp src/Window.cpp src/Loader.cpp src/shaders/ShaderProgram.cpp src/shaders/RectShader.cpp src/entities/Entity.cpp src/renderers/Renderer.cpp src/vehicledynamics/BicycleModel.cpp src/utilities/Randomizer.cpp src/simulator/Simulator.cpp src/envs/ParkingEnv.cpp -o output/program -Llib -Iinclude -lglfw3dll
-```
-- CMake
-1. Configure & Generate Build Files
-```
-cmake -B build -S . -DBUILD_TESTING=OFF (Without tests)
-```
-or
-``` 
-cmake -B build -S . -DBUILD_TESTING=ON (With tests)
+cmake -S . -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBUILD_TESTING=OFF
 ```
 
 2. Build / Link the Project
-```
-cmake --build build --config Release
+
+```cmd
+cmake --build build
 ```
 
 ## Documentation
@@ -61,6 +66,7 @@ cmake --build build --config Release
 - [Development notes](docs/Car_Simulator_Dev_Notes.md)
 - [Class architecture](docs/class_architecture.md)
 - [Class diagram](docs/class_diagram.md)
+- [Build system architecture](docs/build_system_architecture.md)
 - [CI process](docs/CI_Process.md)
 
 
