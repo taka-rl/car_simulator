@@ -15,7 +15,7 @@ Top-down 2D car simulator: **car body + 4 wheels**, meters-first physics with a 
 ---
 
 ## Simulation Environment
-Windows 11
+Windows 11/ MacOS
 
 ### Library
 | Library      | version | link |
