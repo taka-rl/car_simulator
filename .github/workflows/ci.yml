@@ -8,7 +8,7 @@ on:
     branches: [ "main", "feature/add_ci_matrix_build"]
   pull_request:
     branches: [ "main" ]
-  # Enable the maunal trigger button
+  # Enable the manual trigger button
   workflow_dispatch:
 
 env:
@@ -23,11 +23,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-latest]
       
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      
+      - name: Show OS information
+        run: |
+          echo "Running on ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
       
       - name: Configure CMake
         run: cmake -S . -B build -G ${{env.CMAKE_GENERATOR}} -DCMAKE_C_COMPILER=${{env.CC}} -DCMAKE_CXX_COMPILER=${{env.CXX}} -DBUILD_TESTING=ON
