@@ -38,12 +38,14 @@ Combined actions (e.g. accelerate + steer) are possible.
 
 ## Build System
 
+### Build Tools
 The necessary tools for the build are as follows:
 
 | Tools      | version | link |
 |-----------|---------|---------|
 | CMake | 4.2.1 | https://cmake.org/download/ |
-| clang/clang++ | 22.1.8 | https://github.com/llvm/llvm-project/releases/tag/llvmorg-22.1.8 |
+| clang/clang++ for Windows | 22.1.8 | https://github.com/llvm/llvm-project/releases/tag/llvmorg-22.1.8 |
+| AppleClang | 21.0.0.21000101 |  
 | Ninja | 1.13.2 | https://github.com/ninja-build/ninja/releases/tag/v1.13.2 |
 
 ### Build Command

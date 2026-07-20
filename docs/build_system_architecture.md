@@ -4,6 +4,17 @@
 
 This document outlines the build architecutre of the project, including dependency rules, the concept of the build architecture.
 
+## Build Tools
+
+The necessary tools for the build are as follows:
+
+| Tools      | version | link |
+|-----------|---------|---------|
+| CMake | 4.2.1 | https://cmake.org/download/ |
+| clang/clang++ for Windows | 22.1.8 | https://github.com/llvm/llvm-project/releases/tag/llvmorg-22.1.8 |
+| AppleClang | 21.0.0.21000101 |  
+| Ninja | 1.13.2 | https://github.com/ninja-build/ninja/releases/tag/v1.13.2 |
+
 ## Dependency Summary
 
 | Target               | Direct dependencies                 | Purpose                                                     |
