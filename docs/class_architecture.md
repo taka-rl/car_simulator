@@ -8,48 +8,138 @@ For the full, exhaustive list of methods/attributes per class, see `class_diagra
 
 ### Layers
 
-1. **Application / Platform**
-   - `Window` (GLFW + GLAD + OpenGL context lifetime)
-   - `main.cpp` (creates `Window`, then starts `Simulator`)
+1. **Composition Root**
+   - `main.cpp`
+   - Creates the platform and application objects.
+   - Controls their construction and destruction order.
 
-2. **Simulation Orchestrator**
+2. **Platform**
+   - `Window` 
+   - Owns GLFW initialization, the native window, the OpenGL context, and the GLAD initialization.
+
+3. **Simulation Orchestrator**
    - `Simulator` 
       - Input produces `Action`
       - `ParkingEnv::step(Action, dt)` updates `VehicleState` and produces `Observation`
       - `Simulator` stores prev/cur snapshots
       - `draw()` interpolates and renders
 
-3. **Environment (Parking task)**
+4. **Environment (Parking task)**
    - `ParkingEnv` (step the environment by one time step, parking slot placement, termination checks, reward computation, reset the environment)
    - `ParkingParams` (success tolerances)
+   - HighwayEnv, other environments shall be here in the future development
 
-4. **Vehicle Dynamics**
+5. **Vehicle Dynamics**
    - `BicycleModel` (kinematic bicycle update)
+   - Calculates vehicle-state transitions.
    - `VehicleTypes` (`VehicleState`, `VehicleParams`, `Action`, `Position2D`)
    - `MathUtils` (angle helpers / constants)
 
-5. **Rendering (OpenGL rectangles)**
+6. **Rendering (OpenGL rectangles)**
    - `Renderer` (meters → NDC conversion, draw calls)
    - `Entity` (render instance: pose/size/color + links to mesh/shader)
    - `Loader` (unit quad mesh: VAO/VBO/EBO)
    - `RectShader` → `ShaderProgram` (shader program + cached uniform locations)
 
-6. **Utilities**
+7. **Utilities**
    - `Randomizer` (RNG utilities used by `ParkingEnv`)
 
+8. **Core Types and Math**
+   - `VehicleTypes`
+   - `MathUtils`
+   - `ParkingParams`
+   - Shared data structures, constants, and mathematical helpers.
+
 ---
+
+### High-level dependency graph
+
+```mermaid
+
+flowchart TD
+    Main["Composition Root<br/>main.cpp"]
+    Platform["Platform<br/>Window"]
+    Simulator["Application Orchestrator<br/>Simulator"]
+    Environment["Environment<br/>ParkingEnv"]
+    Dynamics["Vehicle Dynamics<br/>BicycleModel"]
+    Core["Core Types and Math<br/>VehicleTypes, MathUtils, ParkingParams"]
+    Utilities["Utilities<br/>Randomizer"]
+    Rendering["Rendering<br/>Renderer, Entity, Loader, Shaders"]
+
+    Main --> Platform
+    Main --> Simulator
+
+    Simulator --> Platform
+    Simulator --> Environment
+    Simulator --> Rendering
+
+    Environment --> Dynamics
+    Environment --> Core
+    Environment --> Utilities
+
+    Dynamics --> Core
+    Rendering --> Core
+
+```
 
 ## Dependency rules
 
-- **Pure math / types** (`VehicleTypes`, `MathUtils`, `ParkingParams`) must not depend on OpenGL/GLFW.
-- **Dynamics / env** (`BicycleModel`, `ParkingEnv`) should stay OpenGL-free.
-- Only the **rendering layer** (`Renderer`, `Loader`, `ShaderProgram`, `RectShader`) touches OpenGL.
-- Any creation of RectShader/Loader/Renderer must happen after `Window` has created the context + loaded GLAD.
-- `Entity` should not own GPU resources; it should reference shared render resources.
-- `Window` owns the GLFWwindow; Simulator only borrows GLFWwindow*. Therefore `Window` must outlive `Simulator`.
+### Core Independence
+
+Core types, mathematical utilities, and vehicle-dynamics logic must be
+independent of application, platform, environment, and rendering concerns.
+
+Core code must not:
+
+- Call a renderer
+- Update a graphical `Entity`
+- Create or manage a window
+- Invoke GLFW, GLAD, or OpenGL
+- Depend on shader classes
+- Depend on `ParkingEnv` or `Simulator`
+
+### Environment and Vehicle-Model Boundary
+
+The environment must use the vehicle model to advance the simulation.
+
+`ParkingEnv` shall call `BicycleModel`, but `BicycleModel` must not know about
+or depend on `ParkingEnv`.
+
+The vehicle model should receive vehicle-related input and calculate the
+resulting state independently of the active environment. This allows it to be reused by parking, and other environments such as highway-driving, and path-tracking in the future development.
+
+### Simulation and Rendering Boundary
+
+Simulation logic must remain independent of visual presentation.
+
+The rendering layer shall read simulation results such as position, heading,
+dimensions, and environment geometry. It must not determine simulation
+behavior, calculate rewards, or advance the environment.
+
+`Simulator` is responsible for passing the required state from the simulation to the rendering layer.
+
+### Environment and Rendering Boundary
+
+The environment and rendering layers shall not depend directly on each other.
+
+`ParkingEnv` must not create graphical entities or issue drawing commands.
+The renderer must not call `ParkingEnv::step()`, calculate rewards, or modify environment state.
+Their interaction is coordinated by `Simulator`.
+
+### OpenGL Context and Resource Lifetime
+
+- OpenGL-dependent resources must be created only after `Window` creates the
+  OpenGL context and loads GLAD.
+- `Entity` does not own GPU resources; it references shared mesh and shader
+  resources.
+- `Window` owns `GLFWwindow`.
+- `Simulator` only borrows the `GLFWwindow*`.
+- `Window` must therefore outlive `Simulator`.
+
 ---
 
 ## Initialization and main loop flow
+
 1. main.cpp
    - Window window(...)
       - calls glfwInit (once), creates GLFWwindow, makes context current, loads GLAD, sets vsync.
