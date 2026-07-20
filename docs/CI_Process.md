@@ -205,3 +205,6 @@ Make sure that you follow the instruction of "### `CarSimulator_tests`" and "## 
 4. Push your branch – CI will run the same sequence automatically.
 
 ## 6. Future development ideas
+
+- Measure code coverage
+- Add more test cases
