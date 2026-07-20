@@ -29,10 +29,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Show OS information
+      - name: Show environment information
         run: |
           echo "Running on ${{ runner.os }}"
           echo "Architecture: ${{ runner.arch }}"
+          cmake --version
+          ninja --version
+          clang --version
+          clang++ --version
       
       - name: Configure CMake
         run: cmake -S . -B build -G ${{env.CMAKE_GENERATOR}} -DCMAKE_C_COMPILER=${{env.CC}} -DCMAKE_CXX_COMPILER=${{env.CXX}} -DBUILD_TESTING=ON
